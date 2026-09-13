@@ -1,12 +1,12 @@
 <div align="center">
 
-# 🎓 agent-skills
+# 🎓 Vibe Coding Skills
 
 **Convierte tu asistente de IA en un equipo de especialistas.**
 
 [![Licencia MIT](https://img.shields.io/badge/licencia-MIT-blue)](LICENSE)
 [![Node.js 18+](https://img.shields.io/badge/Node.js-18%2B-brightgreen?logo=node.js&logoColor=white)](https://nodejs.org/es/download)
-[![Windows · macOS · Linux](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-informational)](#-instalación-en-4-pasos)
+[![Windows · macOS · Linux](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-informational)](#5--instalación-en-4-pasos)
 [![Pruebas de extremo a extremo](https://img.shields.io/badge/pruebas-de%20extremo%20a%20extremo-success)](#-para-el-dueño-del-repositorio)
 
 7 skills · 4 herramientas · 3 minutos de instalación
@@ -17,18 +17,18 @@
 
 ## 📖 Índice
 
-1. [¿Qué es esto y para qué sirve?](#-qué-es-esto-y-para-qué-sirve)
-2. [Las siete skills](#-las-siete-skills)
-3. [¿Qué necesita mi computador?](#-qué-necesita-mi-computador)
-4. [¿Global o por proyecto?](#-global-o-por-proyecto)
-5. [Instalación en 4 pasos](#-instalación-en-4-pasos)
-6. [Si algo sale mal](#-si-algo-sale-mal)
-7. [Mantenimiento](#-mantenimiento)
-8. [Opciones avanzadas](#-opciones-avanzadas)
+1. [¿Qué es esto y para qué sirve?](#1--qué-es-esto-y-para-qué-sirve)
+2. [Las siete skills](#2--las-siete-skills)
+3. [¿Qué necesita mi computador?](#3--qué-necesita-mi-computador)
+4. [¿Global o por proyecto?](#4--global-o-por-proyecto)
+5. [Instalación en 4 pasos](#5--instalación-en-4-pasos)
+6. [Si algo sale mal](#6--si-algo-sale-mal)
+7. [Mantenimiento](#7--mantenimiento)
+8. [Opciones avanzadas](#8--opciones-avanzadas)
 
 ---
 
-## 💡 ¿Qué es esto y para qué sirve?
+## 1. 💡 ¿Qué es esto y para qué sirve?
 
 Una **skill** es un documento de instrucciones que tu asistente de IA lee antes de responderte.
 
@@ -61,7 +61,7 @@ Puedes instalarlas en una o en todas.
 
 ---
 
-## 📚 Las siete skills
+## 2. 📚 Las siete skills
 
 | | Skill | Para qué sirve |
 |:---:|---|---|
@@ -78,7 +78,7 @@ Puedes instalarlas en una o en todas.
 
 ---
 
-## 🧰 ¿Qué necesita mi computador?
+## 3. 🧰 ¿Qué necesita mi computador?
 
 Cuatro programas: **Node.js 18+**, **npm**, **npx** y **git**. 🙌 **No tienes que instalarlos tú.**
 
@@ -142,7 +142,7 @@ Descarga las skills, te pregunta dónde las quieres y las copia. **Nada más.** 
 
 ---
 
-## 🌍 ¿Global o por proyecto?
+## 4. 🌍 ¿Global o por proyecto?
 
 | | 🌍 **Global** | 📁 **Por proyecto** |
 |---|---|---|
@@ -193,7 +193,7 @@ Las cuatro documentan su carpeta personal de forma distinta:
 
 ---
 
-## 🚀 Instalación en 4 pasos
+## 5. 🚀 Instalación en 4 pasos
 
 Ya sabes **qué skills hay**, **qué necesita tu computador** y **dónde van a quedar**. Esto es lo único que falta hacer.
 
@@ -344,7 +344,7 @@ Si instalaste `solution-architect`, en lugar de lanzarse a escribir código debe
 
 ---
 
-## 🆘 Si algo sale mal
+## 6. 🆘 Si algo sale mal
 
 | 😕 Lo que ves | 💡 Qué significa y qué hacer |
 |---|---|
@@ -361,15 +361,15 @@ Si instalaste `solution-architect`, en lugar de lanzarse a escribir código debe
 
 ---
 
-## 🔧 Mantenimiento
+## 7. 🔧 Mantenimiento
 
 - 🔄 **Actualizar:** repite el paso 2 añadiendo `--force`, para que reemplace los archivos anteriores.
-- 🗑️ **Quitar las skills:** borra las carpetas de la tabla de [¿Global o por proyecto?](#-global-o-por-proyecto). No hay desinstalador porque no hace falta: solo son archivos de texto. Si las instalaste globalmente, borra además el bloque entre `<!-- agent-skills: inicio -->` y `<!-- agent-skills: fin -->` de `~/.junie/AGENTS.md` y `~/.gemini/AGENTS.md`.
+- 🗑️ **Quitar las skills:** borra las carpetas de la tabla de [¿Global o por proyecto?](#4--global-o-por-proyecto). No hay desinstalador porque no hace falta: solo son archivos de texto. Si las instalaste globalmente, borra además el bloque entre `<!-- agent-skills: inicio -->` y `<!-- agent-skills: fin -->` de `~/.junie/AGENTS.md` y `~/.gemini/AGENTS.md`.
 - 👥 **Trabajo en equipo:** si tu proyecto usa git, sube las carpetas al repositorio (`git add .claude .cursor .junie .agents`). Así todo el equipo obtiene el mismo comportamiento sin instalar nada.
 
 ---
 
-## ⚙️ Opciones avanzadas
+## 8. ⚙️ Opciones avanzadas
 
 <details>
 <summary><b>Saltarse el menú y automatizar la instalación</b></summary>
