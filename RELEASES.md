@@ -31,6 +31,15 @@ git push origin --tags
 
 ---
 
+## 2.1.1 — 2026-09-13
+
+### 🐛 Correcciones
+
+- **La documentación de cada skill se había quedado atrás.** Los siete `INSTALL.md` explicaban solo la instalación por proyecto, no mencionaban que existe un instalador y no decían nada del ámbito global, que existe desde la 1.3.0. Ahora empiezan por el instalador, incluyen la tabla de carpetas de los dos ámbitos y advierten de que Junie y Antigravity necesitan además una línea en su archivo de guías globales.
+- **Los paquetes `.skill` llevaban dentro una copia vieja de ese mismo documento**, que es la que lee quien los instala en Claude.ai o Cowork. Se regeneraron los siete conservando el resto de su contenido.
+
+---
+
 ## 2.1.0 — 2026-09-13
 
 ### ✨ Novedades

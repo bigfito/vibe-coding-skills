@@ -1072,6 +1072,51 @@ done
 contiene "$(cat "$RAIZ/LICENSE")" "Adolfo Orozco" "la licencia nombra al autor"
 igual "$(node -p "require('$RAIZ/package.json').author")" "Adolfo Orozco <bigfito@gmail.com>" "package.json declara al autor"
 
+# ------------------------------------------- 15. Documentación al día
+
+titulo "15. Documentación"
+
+# Cada skill explica su instalación manual: tiene que cubrir los dos ámbitos y
+# apuntar al instalador, no quedarse en la instalación por proyecto.
+docs_incompletas=""
+for doc in "$RAIZ"/skills/*/INSTALL.md; do
+  for exigido in "instalador" "Global" "~/.claude/skills/" "~/.cursor/rules/" "~/.junie/rules/" "~/.gemini/antigravity/"; do
+    grep -qF -- "$exigido" "$doc" || docs_incompletas="$docs_incompletas $(basename "$(dirname "$doc")")/$exigido"
+  done
+done
+[ -z "$docs_incompletas" ] && pasa "los INSTALL.md cubren los dos ámbitos y el instalador" \
+                           || falla "los INSTALL.md cubren los dos ámbitos y el instalador" "faltan:$docs_incompletas"
+
+# El paquete .skill lleva dentro su propia copia del INSTALL.md: si se queda
+# atrás, quien lo instale en Claude.ai leerá instrucciones viejas.
+salida="$(python3 - "$RAIZ" <<'PY'
+import zipfile, glob, os, sys
+raiz = sys.argv[1]
+desfasados = []
+for ruta in sorted(glob.glob(os.path.join(raiz, 'skills/*/*.skill'))):
+    carpeta = os.path.dirname(ruta)
+    nombre = os.path.basename(carpeta)
+    z = zipfile.ZipFile(ruta)
+    try:
+        dentro = z.read(nombre + '/INSTALL.md').decode('utf-8')
+    except KeyError:
+        continue
+    fuera = open(os.path.join(carpeta, 'INSTALL.md'), encoding='utf-8').read()
+    if dentro != fuera:
+        desfasados.append(nombre)
+print(' '.join(desfasados) if desfasados else 'al-dia')
+PY
+)"
+igual "$salida" "al-dia" "el INSTALL.md dentro de cada .skill coincide con el del repositorio"
+
+# El README no puede prometer opciones que ya no existen ni callarse las nuevas.
+for opcion in "--version" "--sin-node" "--global" "--local" "--scope=" "--check" "--dir="; do
+  contiene "$(cat "$RAIZ/README.md")" "$opcion" "el README documenta $opcion"
+done
+contiene "$(cat "$RAIZ/README.md")" "RELEASES.md" "el README enlaza las notas de versión"
+contiene "$(cat "$RAIZ/README.md")" "Adolfo Orozco" "el README acredita al autor"
+contiene "$(cat "$RAIZ/README.md")" "scripts/version.sh" "el README explica cómo publicar una versión"
+
 # ------------------------------------------------------------------- resumen
 
 printf '\n'

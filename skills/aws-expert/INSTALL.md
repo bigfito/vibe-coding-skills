@@ -2,6 +2,35 @@
 
 Este paquete contiene la misma guía en cuatro formatos, uno por entorno. Elige el que uses; si trabajas con varios, instala los que apliquen y versiónalos en el repositorio para que todo el equipo comparta el mismo comportamiento.
 
+> [!TIP]
+> **La forma rápida es el instalador**, que hace todo esto por ti y te pregunta dónde:
+>
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.sh | bash
+> ```
+>
+> ```powershell
+> irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
+> ```
+>
+> Lo que sigue es la **instalación manual**, por si prefieres hacerlo a mano o copiar solo esta skill.
+
+## Dos ámbitos: global o por proyecto
+
+Las rutas de abajo son las del **proyecto** (dentro de la carpeta en la que trabajas). Para que la skill esté disponible en **todos** tus proyectos, usa las mismas carpetas dentro de tu carpeta personal:
+
+| Herramienta | Global | Por proyecto |
+|---|---|---|
+| Claude Code | `~/.claude/skills/` y `~/.claude/agents/` | `.claude/skills/` y `.claude/agents/` |
+| Cursor | `~/.cursor/rules/` | `.cursor/rules/` |
+| Junie | `~/.junie/rules/` | `.junie/rules/` |
+| Antigravity | `~/.gemini/antigravity/rules/` y `~/.gemini/antigravity/global_workflows/` | `.agents/rules/` y `.agents/workflows/` |
+
+En Windows, `~` es tu carpeta de usuario (`C:\Users\TuNombre`).
+
+> [!IMPORTANT]
+> Junie y Antigravity leen sus guías **globales** de un solo archivo (`~/.junie/AGENTS.md` y `~/.gemini/AGENTS.md`). Si instalas a mano en el ámbito global, añade en ese archivo una línea que apunte a la guía copiada, o el asistente no sabrá que está ahí. El instalador lo hace solo, entre marcas y sin tocar el resto del archivo.
+
 ## Claude Code y Claude.ai
 
 Copia la carpeta del skill (con su `SKILL.md`) a:

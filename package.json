@@ -1,6 +1,6 @@
 {
   "name": "vibe-coding-skills",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Vibe Coding Skills: suite de skills de agente (arquitectura, gestión de proyectos, desarrollo Java/Python y nube GCP/AWS) para Claude Code, Cursor, IntelliJ IDEA Ultimate (Junie) y Google Antigravity.",
   "author": "Adolfo Orozco <bigfito@gmail.com>",
   "license": "MIT",

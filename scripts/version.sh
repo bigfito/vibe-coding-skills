@@ -66,6 +66,8 @@ PLANTILLA="## $NUEVA — $FECHA
 ### 🐛 Correcciones
 
 - (describe aquí lo que se arregló, o borra esta sección)
+
+---
 "
 
 if grep -q "^## $NUEVA " "$NOTAS" 2>/dev/null; then

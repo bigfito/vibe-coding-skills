@@ -34,7 +34,7 @@ $NodeMinimo = 18
 # Version de este arranque. Se descarga suelto (irm ... | iex), asi que no puede
 # leer package.json: el script scripts/version.sh la mantiene al dia y una
 # prueba comprueba que coincida con la del paquete.
-$Version = '2.1.0'
+$Version = '2.1.1'
 # Las variables se llaman VIBE_SKILLS_*; los nombres antiguos AGENT_SKILLS_*
 # se siguen aceptando para no romper a quien ya los tenga en un script.
 function Get-VarEntorno($nombre, $porDefecto = '') {
