@@ -159,7 +159,7 @@ STUB="$TMP/bin"
 LOG="$TMP/apt.log"
 mkdir -p "$STUB"
 # node y las herramientas de shell que install.sh usa; git queda fuera a propósito.
-for real in node npm npx bash sh env uname grep sed awk tr id cat setsid chmod; do
+for real in node npm npx bash sh env uname grep sed awk tr id cat setsid chmod curl wget dirname rm mkdir; do
   ruta="$(command -v "$real" 2>/dev/null)" && ln -sf "$ruta" "$STUB/$real"
 done
 
@@ -529,6 +529,61 @@ if command -v script >/dev/null 2>&1; then
 else
   salta "preguntas de carpeta (falta el comando 'script')"
 fi
+
+# ---------------------------------------------- 8. Lanzadores de doble clic
+
+titulo "8. Lanzadores de doble clic"
+
+# Los lanzadores descargan install.sh de una URL base configurable. En las
+# pruebas se apunta al propio repositorio con file://, que curl entiende: así
+# no hace falta red ni servidor.
+LANZ_URL="file://$RAIZ"
+LANZ_DIR="$TMP/lanzadores"
+mkdir -p "$LANZ_DIR"
+
+if bash -n "$RAIZ/lanzadores/instalar-macos.command"; then pasa "instalar-macos.command parsea"
+else falla "instalar-macos.command parsea"; fi
+if bash -n "$RAIZ/lanzadores/instalar-linux.sh"; then pasa "instalar-linux.sh parsea"
+else falla "instalar-linux.sh parsea"; fi
+
+[ -x "$RAIZ/lanzadores/instalar-macos.command" ] \
+  && pasa "instalar-macos.command es ejecutable" || falla "instalar-macos.command es ejecutable"
+[ -x "$RAIZ/lanzadores/instalar-linux.sh" ] \
+  && pasa "instalar-linux.sh es ejecutable" || falla "instalar-linux.sh es ejecutable"
+
+# Un npx falso para que el lanzador llegue hasta el final sin instalar nada.
+LANZ_NPX_LOG="$TMP/npx-lanzador.log"
+crear_stub "$STUB/npx" <<STUBEOF
+#!/usr/bin/env bash
+echo "npx \$*" >> "$LANZ_NPX_LOG"
+exit 0
+STUBEOF
+printf '#!/usr/bin/env bash\necho "git version 2.99.0"\n' | crear_stub "$STUB/git"
+
+for lanzador in instalar-macos.command instalar-linux.sh; do
+  rm -f "$LANZ_NPX_LOG"
+  salida="$(cd "$LANZ_DIR" && printf '\n' | PATH="$STUB" AGENT_SKILLS_RAW="$LANZ_URL" \
+    bash "$RAIZ/lanzadores/$lanzador" --all --envs=claude --yes 2>&1)"
+  contiene "$salida" "comprobando el entorno" "$lanzador descarga y ejecuta el instalador"
+  contiene "$salida" "Pulsa una tecla" "$lanzador deja la ventana abierta al terminar"
+  [ -f "$LANZ_NPX_LOG" ] && contiene "$(cat "$LANZ_NPX_LOG")" "--all --envs=claude" "$lanzador pasa los argumentos" \
+                        || falla "$lanzador pasa los argumentos" "npx no se ejecutó"
+done
+
+# Sin red: mensaje comprensible en lugar de un error críptico.
+salida="$(cd "$LANZ_DIR" && printf '\n' | PATH="$STUB" AGENT_SKILLS_RAW="file://$TMP/no-existe" \
+  bash "$RAIZ/lanzadores/instalar-linux.sh" 2>&1)"
+contiene "$salida" "No se pudo descargar" "el lanzador avisa si no puede descargar"
+
+# El lanzador de Windows no se puede ejecutar aquí; se comprueba que contenga
+# las piezas de las que depende.
+BAT="$(cat "$RAIZ/lanzadores/instalar-windows.bat")"
+contiene "$BAT" "Invoke-WebRequest" "instalar-windows.bat descarga el instalador"
+contiene "$BAT" "-File" "instalar-windows.bat lo ejecuta como script, no por tubería"
+contiene "$BAT" "%*" "instalar-windows.bat reenvía los argumentos"
+contiene "$BAT" "pause" "instalar-windows.bat deja la ventana abierta"
+
+rm -f "$STUB/git" "$LANZ_NPX_LOG"
 
 # ------------------------------------------------------------------- resumen
 

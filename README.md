@@ -55,6 +55,20 @@ Para confirmar que estás en el sitio correcto, escribe `ls` (en Windows, `dir`)
 
 ## Paso 3. Ejecuta el instalador
 
+### Opción A: doble clic (sin escribir nada)
+
+Descarga el lanzador de tu sistema desde la carpeta [`lanzadores/`](lanzadores) de este repositorio y ábrelo:
+
+| Sistema | Archivo | Cómo abrirlo |
+|---------|---------|--------------|
+| Windows | `instalar-windows.bat` | Doble clic. Si aparece un aviso azul: **Más información → Ejecutar de todas formas**. |
+| macOS | `instalar-macos.command` | **Clic derecho → Abrir → Abrir** la primera vez (macOS avisa de los archivos descargados de internet). |
+| Linux | `instalar-linux.sh` | Clic derecho → **Ejecutar como programa**. Si no aparece esa opción, ábrelo desde la terminal con `bash instalar-linux.sh`. |
+
+Se abre una ventana, el instalador comprueba tu sistema y te va preguntando. No hay que escribir comandos.
+
+### Opción B: una línea en la terminal
+
 Copia la línea que corresponda a tu sistema, pégala en la terminal y pulsa **Enter**.
 
 **En Windows (PowerShell)**
@@ -164,6 +178,8 @@ Lo que el instalador **no** hace: no cambia versiones que ya tengas funcionando,
 | `No hay terminal interactiva disponible` | El menú no puede abrirse. Añade `--all --yes` al final del comando para instalar todo sin menú. |
 | `ya existían y no se tocaron` | Ya habías instalado esas skills. Si quieres reemplazarlas por la versión nueva, repite el comando añadiendo `--force` al final. |
 | No pasa nada al pegar | Puede que no se pegara el texto. Prueba con clic derecho (Windows) o **⌘ + V** (macOS). |
+| La ventana del lanzador se cierra sola | Ábrelo desde la terminal para ver el mensaje: `bash instalar-macos.command`. |
+| macOS dice que no se puede abrir | Es el aviso para archivos descargados. Clic derecho sobre el archivo → **Abrir** → **Abrir**. |
 | Instaló, pero el asistente no cambia | Cierra y vuelve a abrir el asistente. En Cursor, comprueba **Settings → Rules**. |
 
 **Para revisar tu computador sin instalar ni cambiar nada**, usa esta línea:
