@@ -48,6 +48,15 @@ for arg in "$@"; do
   esac
 done
 
+# El ámbito pedido por variable de entorno se convierte en bandera, para que
+# llegue también al instalador con Node y no solo al modo sin Node.
+case " ${SN_AMBITOS:-} " in
+  *" global "*) ARGS_INSTALADOR+=("--global") ;;
+esac
+case " ${SN_AMBITOS:-} " in
+  *" proyecto "*) ARGS_INSTALADOR+=("--local") ;;
+esac
+
 # Si la comprobación se pidió por variable de entorno, el instalador también
 # tiene que enterarse: sin esto instalaría las skills en vez de solo mirar.
 if [ "$SOLO_COMPROBAR" = "1" ]; then

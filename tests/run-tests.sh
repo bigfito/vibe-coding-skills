@@ -777,6 +777,35 @@ if [ -n "${CASA_REAL:-}" ] && [ -d "$CASA_REAL" ]; then
   fi
 fi
 
+# ------------------------------------ 10b. El ámbito por variable de entorno
+
+# El README documenta AGENT_SKILLS_AMBITO para PowerShell, donde `irm | iex` no
+# admite argumentos: tiene que llegar igual al instalador con Node.
+CASA_VAR="$(casa_limpia variable)"
+PROY_VAR="$TMP/proyecto-variable"
+mkdir -p "$PROY_VAR"
+
+(cd "$PROY_VAR" && HOME="$CASA_VAR" AGENT_SKILLS_AMBITO=proyecto node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=claude --yes >/dev/null 2>&1)
+[ -f "$PROY_VAR/.claude/skills/java-developer/SKILL.md" ] && pasa "AGENT_SKILLS_AMBITO=proyecto instala en el proyecto" || falla "AGENT_SKILLS_AMBITO=proyecto instala en el proyecto"
+[ ! -d "$CASA_VAR/.claude" ] && pasa "AGENT_SKILLS_AMBITO=proyecto no toca la carpeta personal" || falla "AGENT_SKILLS_AMBITO=proyecto no toca la carpeta personal"
+
+rm -rf "$PROY_VAR/.claude"
+(cd "$PROY_VAR" && HOME="$CASA_VAR" AGENT_SKILLS_AMBITO=global node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=claude --yes >/dev/null 2>&1)
+[ -f "$CASA_VAR/.claude/skills/java-developer/SKILL.md" ] && pasa "AGENT_SKILLS_AMBITO=global instala en la carpeta personal" || falla "AGENT_SKILLS_AMBITO=global instala en la carpeta personal"
+
+# El arranque la convierte en bandera antes de llamar al instalador.
+rm -f "$NPX_LOG"
+crear_stub "$STUB/npx" <<STUBEOF
+#!/usr/bin/env bash
+echo "npx \$*" >> "$NPX_LOG"
+exit 0
+STUBEOF
+printf '#!/usr/bin/env bash\necho "git version 2.99.0"\n' | crear_stub "$STUB/git"
+salida="$(cd "$PROY_VAR" && PATH="$STUB" HOME="$CASA_VAR" AGENT_SKILLS_AMBITO=global bash "$RAIZ/install.sh" --all --yes < /dev/null 2>&1)"
+[ -f "$NPX_LOG" ] && contiene "$(cat "$NPX_LOG")" "--global" "install.sh convierte AGENT_SKILLS_AMBITO en --global" \
+                  || falla "install.sh convierte AGENT_SKILLS_AMBITO en --global" "npx no se ejecutó"
+rm -f "$STUB/git" "$NPX_LOG"
+
 # --------------------------------------- 11. La comprobación previa completa
 
 titulo "11. Comprobación previa (--check)"

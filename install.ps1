@@ -49,6 +49,13 @@ foreach ($a in $args) {
     }
 }
 
+# El ambito pedido por variable de entorno se convierte en bandera, para que
+# llegue tambien al instalador con Node y no solo al modo sin Node.
+if ($env:AGENT_SKILLS_AMBITO) {
+    if ($SnAmbitos -contains 'global' -and -not ($ArgsInstalador -contains '--global')) { $ArgsInstalador += '--global' }
+    if ($SnAmbitos -contains 'proyecto' -and -not ($ArgsInstalador -contains '--local')) { $ArgsInstalador += '--local' }
+}
+
 # Si la comprobacion se pidio por variable de entorno, el instalador tambien
 # tiene que enterarse: sin esto instalaria las skills en vez de solo mirar.
 if ($SoloComprobar -and -not ($ArgsInstalador -contains '--check') -and -not ($ArgsInstalador -contains '--doctor')) {
