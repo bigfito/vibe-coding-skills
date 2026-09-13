@@ -65,6 +65,11 @@ sn_copiar() {
     SN_OMITIDOS=$((SN_OMITIDOS + 1))
     return 0
   fi
+  # En simulación se cuenta lo que se copiaría, pero no se escribe nada.
+  if [ "$SN_SIMULAR" = "1" ]; then
+    SN_COPIADOS=$((SN_COPIADOS + 1))
+    return 0
+  fi
   mkdir -p "$(dirname "$destino")" || return 1
   cp "$origen" "$destino" || return 1
   SN_COPIADOS=$((SN_COPIADOS + 1))
@@ -177,7 +182,8 @@ sn_instalar_skill() {
 # Junie y Antigravity leen sus guías globales de un único archivo: se les añade
 # un bloque con la lista de lo instalado, entre marcas, sin tocar lo demás.
 sn_indice() {
-  local entorno="$1" archivo carpeta bloque temporal
+  local entorno="$1" archivo carpeta temporal
+  [ "$SN_SIMULAR" = "1" ] && return 0
   case "$entorno" in
     junie) archivo="$HOME/.junie/AGENTS.md" ;;
     antigravity) archivo="$HOME/.gemini/AGENTS.md" ;;
@@ -197,6 +203,7 @@ sn_indice() {
     for skill_dir in "$ORIGEN_SKILLS"/skills/*; do
       [ -d "$skill_dir" ] || continue
       skill_nombre="$(basename "$skill_dir")"
+      if [ -n "$SN_SKILLS" ] && ! printf ' %s ' "$SN_SKILLS" | grep -qF " $skill_nombre "; then continue; fi
       archivos=""
       for archivo_regla in "$carpeta/$skill_nombre"*.md "$carpeta/$skill_nombre"*.mdc; do
         [ -f "$archivo_regla" ] || continue
@@ -254,6 +261,7 @@ sn_preguntar_carpeta() {
     \'*\') respuesta="${respuesta%\'}"; respuesta="${respuesta#\'}" ;;
   esac
   ruta="$(printf '%s' "$respuesta" | sed 's/\\\(.\)/\1/g')"
+  # shellcheck disable=SC2088  # aquí "~" es un patrón de case, no una expansión
   case "$ruta" in "~") ruta="$HOME" ;; "~/"*) ruta="$HOME/${ruta#\~/}" ;; esac
 
   if [ ! -d "$ruta" ]; then
@@ -311,6 +319,9 @@ modo_sin_node() {
   SN_AQUI="${SN_AQUI:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)}"
   SN_TARBALL="${VIBE_SKILLS_TARBALL:-${AGENT_SKILLS_TARBALL:-https://codeload.github.com/bigfito/vibe-coding-skills/tar.gz/refs/heads/main}}"
   SN_FORZAR="${SN_FORZAR:-0}"
+  SN_ASUMIR="${SN_ASUMIR:-0}"
+  SN_SIMULAR="${SN_SIMULAR:-0}"
+  SN_SKILLS="${SN_SKILLS:-}"
   SN_MARCA_INICIO="<!-- vibe-coding-skills: inicio (bloque generado, no editar) -->"
   SN_MARCA_FIN="<!-- vibe-coding-skills: fin -->"
   # Marcas de versiones anteriores: se reconocen al reescribir el bloque, para
@@ -321,11 +332,13 @@ modo_sin_node() {
   SN_OMITIDOS=0
   SN_TEMPORAL=""
   SN_INDICES=""
-  SN_DESTINO="${1:-}"
+  # El argumento manda si se pasa; si no, vale lo que haya puesto --dir=.
+  SN_DESTINO="${1:-${SN_DESTINO:-}}"
   ORIGEN_SKILLS=""
 
   titulo "Vibe Coding Skills — instalación sin Node"
-  printf '  Se copiarán todas las skills; no hace falta Node, npm ni git.\n'
+  printf '  Se copiarán las skills; no hace falta Node, npm ni git.\n'
+  [ "$SN_SIMULAR" = "1" ] && printf '  %sModo simulación: no se escribirá ningún archivo.%s\n' "$Y" "$N"
 
   sn_obtener_fuente || return 1
 
@@ -337,25 +350,26 @@ modo_sin_node() {
   done
 
   if [ -z "${SN_AMBITOS:-}" ]; then
-    if hay_terminal; then sn_preguntar_ambito; else SN_AMBITOS="global"; fi
+    if hay_terminal && [ "$SN_ASUMIR" != "1" ]; then sn_preguntar_ambito; else SN_AMBITOS="global"; fi
   fi
 
   # La carpeta del proyecto solo hace falta si se instala en el proyecto.
   case " $SN_AMBITOS " in
     *" proyecto "*)
       if [ -z "$SN_DESTINO" ]; then
-        if hay_terminal; then sn_preguntar_carpeta; else SN_DESTINO="$PWD"; fi
+        if hay_terminal && [ "$SN_ASUMIR" != "1" ]; then sn_preguntar_carpeta; else SN_DESTINO="$PWD"; fi
       fi ;;
     *) SN_DESTINO="${SN_DESTINO:-$PWD}" ;;
   esac
 
-  if hay_terminal && [ -z "${SN_ENTORNOS:-}" ]; then sn_preguntar_entornos; fi
+  if hay_terminal && [ "$SN_ASUMIR" != "1" ] && [ -z "${SN_ENTORNOS:-}" ]; then sn_preguntar_entornos; fi
   SN_ENTORNOS="${SN_ENTORNOS:-claude cursor junie antigravity}"
 
   printf '\n  %sSe instalarán%s\n' "$B" "$N"
   printf '    Ámbito:       %s\n' "$SN_AMBITOS"
   case " $SN_AMBITOS " in *" proyecto "*) printf '    Carpeta:      %s\n' "$SN_DESTINO" ;; esac
   printf '    Herramientas:%s\n' "$(printf ' %s' $SN_ENTORNOS)"
+  [ -n "$SN_SKILLS" ] && printf '    Skills:      %s\n' "$SN_SKILLS"
 
   SN_LISTA="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/vibe-coding-skills-lista")"
 
@@ -364,6 +378,8 @@ modo_sin_node() {
     for base in "$ORIGEN_SKILLS"/skills/*; do
       [ -d "$base" ] || continue
       skill="$(basename "$base")"
+      # Con --skills= solo se instalan las pedidas; sin la bandera, todas.
+      if [ -n "$SN_SKILLS" ] && ! printf ' %s ' "$SN_SKILLS" | grep -qF " $skill "; then continue; fi
       for entorno in $SN_ENTORNOS; do
         sn_instalar_skill "$base" "$skill" "$entorno" "$ambito"
       done
@@ -379,7 +395,12 @@ modo_sin_node() {
   rm -f "$SN_LISTA"
   [ -n "$SN_TEMPORAL" ] && rm -rf "$SN_TEMPORAL"
 
-  printf '\n  %s✓%s %s archivo(s) instalados.\n' "$G" "$N" "$SN_COPIADOS"
+  if [ "$SN_SIMULAR" = "1" ]; then
+    printf '\n  %s✓%s %s archivo(s) se copiarían. %sModo simulación: no se escribió nada.%s\n' \
+      "$G" "$N" "$SN_COPIADOS" "$Y" "$N"
+  else
+    printf '\n  %s✓%s %s archivo(s) instalados.\n' "$G" "$N" "$SN_COPIADOS"
+  fi
   if [ "$SN_OMITIDOS" -gt 0 ]; then
     printf '  %s! %s ya existían y no se tocaron.%s\n' "$Y" "$SN_OMITIDOS" "$N"
   fi

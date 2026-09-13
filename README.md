@@ -137,7 +137,9 @@ Funciona **aunque todavía no tengas Node.js**.
 > [!IMPORTANT]
 > En todos los casos **comprueba el resultado**: después de instalar verifica que los programas existan de verdad, en lugar de fiarse de que el gestor dijera que fue bien.
 
-**Lo que el instalador *no* hace:** ❌ no cambia versiones que ya te funcionan · ❌ no instala nada fuera de esos cuatro programas · ❌ no modifica tu sistema si respondes que no · ❌ no toca nada fuera de las carpetas de skills.
+**Lo que el instalador *no* hace:** ❌ no cambia versiones que ya te funcionan · ❌ no instala nada fuera de esos cuatro programas · ❌ no modifica tu sistema si respondes que no.
+
+Los únicos archivos que escribe son las carpetas de skills de la tabla de [4](#4--global-o-por-proyecto) y, en la instalación global, el bloque del índice dentro de `~/.junie/AGENTS.md` y `~/.gemini/AGENTS.md` — entre marcas y sin tocar el resto del archivo.
 
 ### 3.3 🪶 Modo sin Node
 
@@ -154,7 +156,7 @@ $env:VIBE_SKILLS_SIN_NODE=1; irm https://raw.githubusercontent.com/bigfito/vibe-
 Descarga las skills, te pregunta dónde las quieres y las copia. **Nada más.** Y si dices que **no** a instalar Node durante la instalación normal, el propio instalador te ofrece este camino.
 
 > [!NOTE]
-> Única diferencia: instala **todas** las skills (en la normal puedes elegir cuáles). El resultado es idéntico, archivo por archivo.
+> Única diferencia: su **menú** es más corto, porque no pregunta qué skills quieres. El resultado es idéntico, archivo por archivo, y las banderas `--skills=`, `--envs=`, `--dir=`, `--global`, `--local`, `--force` y `--yes` funcionan igual que en la instalación normal.
 
 ---
 
@@ -414,8 +416,10 @@ npx github:bigfito/vibe-coding-skills --all --dry-run                       # si
 | `--dry-run` | Muestra qué haría, sin tocar nada |
 | `--check` | Solo diagnostica: no instala ni cambia nada |
 | `--no-install` | Nunca instala requisitos: solo dice qué falta |
-| `--sin-node` | Copia las skills sin Node, sin instalar nada en el sistema |
+| `--sin-node` | Copia las skills sin Node *(solo en `install.sh` e `install.ps1`)* |
 | `--help` | Ayuda |
+
+Todas funcionan igual por los dos caminos (con Node y con `--sin-node`), salvo `--sin-node` mismo, que solo tiene sentido en los arranques `install.sh` e `install.ps1`.
 
 **Variables de entorno** (útiles en PowerShell, donde `irm … | iex` no admite argumentos):
 
@@ -424,7 +428,7 @@ npx github:bigfito/vibe-coding-skills --all --dry-run                       # si
 | `VIBE_SKILLS_ASSUME_YES=1` | `--yes` |
 | `VIBE_SKILLS_NO_INSTALL=1` | `--no-install` |
 | `VIBE_SKILLS_CHECK=1` | `--check` |
-| `VIBE_SKILLS_SIN_NODE=1` | `--sin-node` |
+| `VIBE_SKILLS_SIN_NODE=1` | `--sin-node` *(solo en los arranques)* |
 | `VIBE_SKILLS_AMBITO=global` | `--global` |
 
 > [!NOTE]

@@ -41,6 +41,11 @@ $SinInstalar = ((Get-VarEntorno 'NO_INSTALL') -eq '1')
 $SoloComprobar = ((Get-VarEntorno 'CHECK') -eq '1')
 $SinNode = ((Get-VarEntorno 'SIN_NODE') -eq '1')
 $SnAmbitos = @()
+$SnEntornos = @()
+$SnSkills = @()
+$SnDestino = ''
+$SnForzar = $false
+$SnSimular = $false
 $Ambito = Get-VarEntorno 'AMBITO'
 if ($Ambito) { $SnAmbitos = $Ambito -split '[ ,]+' | Where-Object { $_ } }
 $RawBase = Get-VarEntorno 'RAW' 'https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main'
@@ -55,6 +60,18 @@ foreach ($a in $args) {
         # Ambito de instalacion, tambien para el modo sin Node.
         '^--global$' { $SnAmbitos += 'global'; $ArgsInstalador += $a }
         '^(--local|--proyecto)$' { $SnAmbitos += 'proyecto'; $ArgsInstalador += $a }
+        # Estas banderas las entienden los dos caminos: el instalador con Node
+        # las recibe tal cual, y el modo sin Node necesita que se traduzcan.
+        '^--force$' { $SnForzar = $true; $ArgsInstalador += $a }
+        '^--envs=' { $SnEntornos = ($a -replace '^--envs=', '') -split ','; $ArgsInstalador += $a }
+        '^--skills=' { $SnSkills = ($a -replace '^--skills=', '') -split ','; $ArgsInstalador += $a }
+        '^--dir=' { $SnDestino = ($a -replace '^--dir=', ''); $ArgsInstalador += $a }
+        '^--dry-run$' { $SnSimular = $true; $ArgsInstalador += $a }
+        '^(--scope=|--ambito=)' {
+            $SnAmbitos = ($a -replace '^--(scope|ambito)=', '') -split ',' |
+                         ForEach-Object { if ($_ -in @('local', 'project')) { 'proyecto' } else { $_ } }
+            $ArgsInstalador += $a
+        }
         # Comprobar es mirar, no tocar: --check nunca instala nada.
         '^(--check|--doctor)$' { $SoloComprobar = $true; $ArgsInstalador += $a }
         default             { $ArgsInstalador += $a }
@@ -167,7 +184,7 @@ function Invoke-OfrecerSinNode {
         Escribe-Error "  No se pudo cargar el modo sin Node."
         return $false
     }
-    return (Invoke-ModoSinNode -Ambitos $SnAmbitos)
+    return (Invoke-ModoSinNode -Ambitos $SnAmbitos -Entornos $SnEntornos -Skills $SnSkills -Destino $SnDestino -Forzar:$SnForzar -Asumir:$AsumirSi -Simular:$SnSimular)
 }
 
 # ------------------------------------------------------- comprobar requisitos
@@ -230,7 +247,7 @@ else { Write-Host "  Gestor:  ninguno conocido" -ForegroundColor Yellow }
 # Si se pidio explicitamente, ni siquiera se miran los requisitos.
 if ($SinNode) {
     if (-not (Import-SinNode)) { Escribe-Error "  No se pudo cargar el modo sin Node."; exit 1 }
-    if (Invoke-ModoSinNode -Ambitos $SnAmbitos) { exit 0 } else { exit 1 }
+    if (Invoke-ModoSinNode -Ambitos $SnAmbitos -Entornos $SnEntornos -Skills $SnSkills -Destino $SnDestino -Forzar:$SnForzar -Asumir:$AsumirSi -Simular:$SnSimular) { exit 0 } else { exit 1 }
 }
 
 $estado = Comprueba-Requisitos

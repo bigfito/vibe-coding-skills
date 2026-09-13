@@ -625,7 +625,7 @@ salida="$(cd "$SN_PROY" && PATH="$STUB" VIBE_SKILLS_SRC="$RAIZ" bash "$RAIZ/inst
 contiene "$salida" "ya existían y no se tocaron" "sin Node es idempotente"
 
 # Descarga de verdad: se empaqueta el repositorio y se sirve por file://.
-if hay_tar="$(command -v tar)"; then
+if command -v tar >/dev/null 2>&1; then
   SN_DESCARGA="$TMP/sin-node-descarga"
   mkdir -p "$SN_DESCARGA"
   (cd "$RAIZ" && tar -czf "$TMP/repo.tar.gz" --transform 's,^,repo-main/,' skills >/dev/null 2>&1) \
@@ -814,7 +814,11 @@ CASA_CHK="$(casa_limpia check)"
 PROY_CHK="$TMP/proyecto-check"
 mkdir -p "$PROY_CHK"
 
-salida="$(cd "$PROY_CHK" && HOME="$CASA_CHK" node "$RAIZ/bin/vibe-coding-skills.cjs" --check 2>&1)"
+# El PATH reducido no tiene el comando `claude`, así que la máquina de pruebas
+# aparece de verdad sin ningún asistente; git sí tiene que estar, o el informe
+# se iría por la rama de "faltan requisitos".
+printf '#!/usr/bin/env bash\necho "git version 2.99.0"\n' | crear_stub "$STUB/git"
+salida="$(cd "$PROY_CHK" && HOME="$CASA_CHK" PATH="$STUB" node "$RAIZ/bin/vibe-coding-skills.cjs" --check 2>&1)"
 contiene "$salida" "instala skills" "--check explica para qué sirve la aplicación"
 contiene "$salida" "Comprobación del entorno" "--check revisa los requisitos del sistema"
 contiene "$salida" "Asistentes en este computador" "--check revisa también los asistentes"
@@ -827,7 +831,7 @@ no_contiene "$salida" "Faltan requisitos" "--check no inventa requisitos que sí
 
 # Con un asistente presente, lo marca como detectado y no da el aviso.
 mkdir -p "$CASA_CHK/.cursor"
-salida="$(cd "$PROY_CHK" && HOME="$CASA_CHK" node "$RAIZ/bin/vibe-coding-skills.cjs" --check 2>&1)"
+salida="$(cd "$PROY_CHK" && HOME="$CASA_CHK" PATH="$STUB" node "$RAIZ/bin/vibe-coding-skills.cjs" --check 2>&1)"
 contiene "$salida" "detectado" "--check marca el asistente que sí está"
 no_contiene "$salida" "No encontré ninguno" "--check no avisa de más cuando hay un asistente"
 
@@ -836,6 +840,7 @@ no_contiene "$salida" "No encontré ninguno" "--check no avisa de más cuando ha
 # arranca con curl | bash sin tener nada instalado.
 salida="$(cd "$PROY_CHK" && HOME="$CASA_CHK" VIBE_SKILLS_REPO="$RAIZ" bash "$RAIZ/install.sh" --check < /dev/null 2>&1)"
 contiene "$salida" "Asistentes en este computador" "install.sh --check llega al mismo informe"
+rm -f "$STUB/git"
 
 # --------------------------------------------- 12. Nombre y compatibilidad
 
@@ -915,6 +920,83 @@ PY
 (cd "$PROY_C" && HOME="$CASA_M2" VIBE_SKILLS_SRC="$RAIZ" bash "$RAIZ/install.sh" --sin-node --global < /dev/null >/dev/null 2>&1)
 contiene "$(cat "$CASA_M2/.junie/AGENTS.md")" "vibe-coding-skills: inicio" "sin Node: el índice usa la marca nueva"
 no_contiene "$(cat "$CASA_M2/.junie/AGENTS.md")" "agent-skills: inicio" "sin Node: reemplaza el índice antiguo"
+
+# ------------------------------- 13. Las banderas valen en los dos caminos
+
+titulo "13. Paridad de banderas entre el camino con Node y el de sin Node"
+
+CASA_P="$(casa_limpia paridad)"
+PROY_P="$TMP/proyecto-paridad"
+mkdir -p "$PROY_P"
+
+sn() { # sn <argumentos…>  — modo sin Node con la copia local del repositorio
+  (cd "$PROY_P" && HOME="$CASA_P" VIBE_SKILLS_SRC="$RAIZ" bash "$RAIZ/install.sh" --sin-node "$@" < /dev/null 2>&1)
+}
+
+# --dry-run tiene que simular de verdad: es la bandera que promete no tocar nada.
+rm -rf "$PROY_P"/.[a-z]* "$CASA_P"/.[a-z]*
+salida="$(sn --local --dry-run --yes)"
+contiene "$salida" "no se escribió nada" "sin Node: --dry-run avisa de que simula"
+igual "$(find "$PROY_P" -type f | wc -l | tr -d ' ')" "0" "sin Node: --dry-run no escribe en el proyecto"
+igual "$(find "$CASA_P" -type f | wc -l | tr -d ' ')" "0" "sin Node: --dry-run no escribe en la carpeta personal"
+
+# --envs= y --skills= acotan lo que se instala.
+salida="$(sn --local --envs=claude --skills=java-developer --yes)"
+[ -f "$PROY_P/.claude/skills/java-developer/SKILL.md" ] && pasa "sin Node: --skills= instala la pedida" || falla "sin Node: --skills= instala la pedida"
+[ ! -d "$PROY_P/.cursor" ] && pasa "sin Node: --envs= no instala en las demás herramientas" || falla "sin Node: --envs= no instala en las demás herramientas"
+[ ! -f "$PROY_P/.claude/skills/python-developer/SKILL.md" ] && pasa "sin Node: --skills= no instala las demás" || falla "sin Node: --skills= no instala las demás"
+
+# --force sobrescribe lo que ya existe.
+echo "MIO" > "$PROY_P/.claude/skills/java-developer/SKILL.md"
+sn --local --envs=claude --skills=java-developer --force --yes >/dev/null
+if grep -q "MIO" "$PROY_P/.claude/skills/java-developer/SKILL.md"; then falla "sin Node: --force sobrescribe"
+else pasa "sin Node: --force sobrescribe"; fi
+
+# --scope= elige el ámbito igual que --global y --local.
+rm -rf "$PROY_P"/.[a-z]* "$CASA_P"/.[a-z]*
+salida="$(sn --scope=proyecto --envs=claude --skills=java-developer --yes)"
+contiene "$salida" "Ámbito:       proyecto" "sin Node: --scope= elige el ámbito"
+[ -f "$PROY_P/.claude/skills/java-developer/SKILL.md" ] && pasa "sin Node: --scope=proyecto instala en el proyecto" || falla "sin Node: --scope=proyecto instala en el proyecto"
+[ ! -d "$CASA_P/.claude" ] && pasa "sin Node: --scope=proyecto no toca la carpeta personal" || falla "sin Node: --scope=proyecto no toca la carpeta personal"
+
+# --dir= sin estar dentro del proyecto.
+OTRA="$TMP/otra-carpeta-sin-node"
+rm -rf "$OTRA"; mkdir -p "$OTRA"
+sn --local --dir="$OTRA" --envs=claude --skills=java-developer --yes >/dev/null
+[ -f "$OTRA/.claude/skills/java-developer/SKILL.md" ] && pasa "sin Node: --dir= instala en la carpeta indicada" || falla "sin Node: --dir= instala en la carpeta indicada"
+
+# La variable de comprobación también frena al instalador con Node.
+CASA_V="$(casa_limpia variable-check)"
+PROY_V="$TMP/proyecto-variable-check"
+mkdir -p "$PROY_V"
+salida="$(cd "$PROY_V" && HOME="$CASA_V" VIBE_SKILLS_CHECK=1 node "$RAIZ/bin/vibe-coding-skills.cjs" --skills=java-developer --envs=claude --yes --local 2>&1)"
+contiene "$salida" "Comprobación del entorno" "VIBE_SKILLS_CHECK convierte la ejecución en comprobación"
+[ ! -d "$PROY_V/.claude" ] && pasa "VIBE_SKILLS_CHECK no instala nada" || falla "VIBE_SKILLS_CHECK no instala nada"
+
+# Un asistente instalado solo como comando (sin su carpeta) también se detecta.
+salida="$(node -e "
+  var e = require('$RAIZ/lib/entornos.cjs');
+  console.log(typeof e.hayEnPath === 'function' ? 'hay-en-path' : 'falta');
+  console.log(e.ENTORNOS.claude.comando || 'sin-comando');
+" 2>&1)"
+contiene "$salida" "hay-en-path" "la detección mira también el PATH"
+contiene "$salida" "claude" "Claude Code se detecta por su comando"
+
+# Lo mismo por el camino de PowerShell.
+if [ -n "${PWSH:-}" ]; then
+  CASA_PS="$(casa_limpia paridad-ps)"
+  PROY_PS="$TMP/proyecto-paridad-ps"
+  mkdir -p "$PROY_PS"
+  salida="$(cd "$PROY_PS" && HOME="$CASA_PS" VIBE_SKILLS_SRC="$RAIZ" "$PWSH" -NoProfile -File "$RAIZ/install.ps1" --sin-node --local --dry-run --yes < /dev/null 2>&1)"
+  contiene "$salida" "no se escribio nada" "install.ps1 sin Node: --dry-run simula"
+  igual "$(find "$PROY_PS" -type f | wc -l | tr -d ' ')" "0" "install.ps1 sin Node: --dry-run no escribe"
+
+  (cd "$PROY_PS" && HOME="$CASA_PS" VIBE_SKILLS_SRC="$RAIZ" "$PWSH" -NoProfile -File "$RAIZ/install.ps1" --sin-node --local --envs=claude --skills=java-developer --yes < /dev/null >/dev/null 2>&1)
+  [ -f "$PROY_PS/.claude/skills/java-developer/SKILL.md" ] && pasa "install.ps1 sin Node: respeta --skills= y --envs=" || falla "install.ps1 sin Node: respeta --skills= y --envs="
+  [ ! -d "$PROY_PS/.cursor" ] && pasa "install.ps1 sin Node: no instala entornos no pedidos" || falla "install.ps1 sin Node: no instala entornos no pedidos"
+else
+  salta "paridad de banderas en PowerShell (pwsh no está instalado)"
+fi
 
 # ------------------------------------------------------------------- resumen
 

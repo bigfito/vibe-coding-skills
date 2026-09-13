@@ -41,7 +41,7 @@ function variable(nombre) {
 
 function leerOpciones(args) {
   return {
-    check: args.indexOf('--check') !== -1 || args.indexOf('--doctor') !== -1,
+    check: args.indexOf('--check') !== -1 || args.indexOf('--doctor') !== -1 || variable('CHECK') === '1',
     yes: args.indexOf('--yes') !== -1 || args.indexOf('-y') !== -1 || variable('ASSUME_YES') === '1',
     noInstalar: args.indexOf('--no-install') !== -1 || variable('NO_INSTALL') === '1',
     dryRun: args.indexOf('--dry-run') !== -1,

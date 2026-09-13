@@ -62,6 +62,11 @@ function global:Copy-SnArchivo($origen, $destino) {
         $global:SnOmitidos++
         return
     }
+    # En simulacion se cuenta lo que se copiaria, pero no se escribe nada.
+    if ($global:SnSimular) {
+        $global:SnCopiados++
+        return
+    }
     $carpeta = Split-Path -Parent $destino
     if (-not (Test-Path $carpeta)) { New-Item -ItemType Directory -Path $carpeta -Force | Out-Null }
     Copy-Item -Path $origen -Destination $destino -Force
@@ -161,7 +166,8 @@ function global:Install-SnSkill($base, $skill, $entorno, $ambito, $destino) {
 
 # Junie y Antigravity leen sus guias globales de un unico archivo: se les anade
 # un bloque con la lista de lo instalado, entre marcas, sin tocar lo demas.
-function global:Write-SnIndice($entorno, $origen) {
+function global:Write-SnIndice($entorno, $origen, $skills = @()) {
+    if ($global:SnSimular) { return $null }
     $archivo = switch ($entorno) {
         'junie' { Join-Path $HOME '.junie\AGENTS.md' }
         'antigravity' { Join-Path $HOME '.gemini\AGENTS.md' }
@@ -181,6 +187,7 @@ function global:Write-SnIndice($entorno, $origen) {
         ''
     )
     foreach ($dir in Get-ChildItem -Path (Join-Path $origen 'skills') -Directory) {
+        if ($skills -and $skills.Count -and ($dir.Name -notin $skills)) { continue }
         $archivos = Get-ChildItem -Path $carpeta -File -ErrorAction SilentlyContinue |
                     Where-Object { $_.Name.StartsWith($dir.Name) -and ($_.Extension -in @('.md', '.mdc')) } |
                     ForEach-Object { "``$($_.FullName)``" }
@@ -275,9 +282,11 @@ function global:Read-SnEntornos {
 }
 
 function global:Invoke-ModoSinNode {
-    param([string]$Destino = '', [string[]]$Entornos = @(), [string[]]$Ambitos = @(), [switch]$Forzar)
+    param([string]$Destino = '', [string[]]$Entornos = @(), [string[]]$Ambitos = @(),
+          [string[]]$Skills = @(), [switch]$Forzar, [switch]$Asumir, [switch]$Simular)
 
     $global:SnForzar = [bool]$Forzar
+    $global:SnSimular = [bool]$Simular
     $global:SnCopiados = 0
     $global:SnOmitidos = 0
     $global:SnMarcaInicio = '<!-- vibe-coding-skills: inicio (bloque generado, no editar) -->'
@@ -288,7 +297,8 @@ function global:Invoke-ModoSinNode {
     $global:SnMarcaFinVieja = '<!-- agent-skills: fin -->'
 
     Escribe-Titulo "Vibe Coding Skills - instalacion sin Node"
-    Write-Host "  Se copiaran todas las skills; no hace falta Node, npm ni git."
+    Write-Host "  Se copiaran las skills; no hace falta Node, npm ni git."
+    if ($Simular) { Write-Host "  Modo simulacion: no se escribira ningun archivo." -ForegroundColor Yellow }
 
     $origen = Get-SnFuente
     if (-not $origen) { return $false }
@@ -300,24 +310,29 @@ function global:Invoke-ModoSinNode {
         else { Write-Host ("    {0,-14} no detectada" -f $e) -ForegroundColor Yellow }
     }
 
+    # Con -Asumir no se pregunta nada: se usan los valores por defecto.
+    $preguntar = (Hay-Terminal) -and (-not $Asumir)
     if (-not $Ambitos.Count) {
-        $Ambitos = if (Hay-Terminal) { Read-SnAmbitos } else { @('global') }
+        $Ambitos = if ($preguntar) { Read-SnAmbitos } else { @('global') }
     }
     if ($Ambitos -contains 'proyecto' -and -not $Destino) {
-        $Destino = if (Hay-Terminal) { Read-SnCarpeta } else { "$PWD" }
+        $Destino = if ($preguntar) { Read-SnCarpeta } else { "$PWD" }
     }
     if (-not $Destino) { $Destino = "$PWD" }
     if (-not $Entornos.Count) {
-        $Entornos = if (Hay-Terminal) { Read-SnEntornos } else { @('claude', 'cursor', 'junie', 'antigravity') }
+        $Entornos = if ($preguntar) { Read-SnEntornos } else { @('claude', 'cursor', 'junie', 'antigravity') }
     }
 
     Write-Host "`n  Se instalaran"
     Write-Host "    Ambito:       $($Ambitos -join ' ')"
     if ($Ambitos -contains 'proyecto') { Write-Host "    Carpeta:      $Destino" }
     Write-Host "    Herramientas: $($Entornos -join ' ')"
+    if ($Skills.Count) { Write-Host "    Skills:       $($Skills -join ' ')" }
 
     foreach ($ambito in $Ambitos) {
         foreach ($base in Get-ChildItem -Path (Join-Path $origen 'skills') -Directory) {
+            # Con -Skills solo se instalan las pedidas; sin ellas, todas.
+            if ($Skills.Count -and ($base.Name -notin $Skills)) { continue }
             foreach ($entorno in $Entornos) {
                 Install-SnSkill $base.FullName $base.Name $entorno $ambito $Destino
             }
@@ -327,7 +342,7 @@ function global:Invoke-ModoSinNode {
     $indices = @()
     if ($Ambitos -contains 'global') {
         foreach ($entorno in $Entornos) {
-            $archivo = Write-SnIndice $entorno $origen
+            $archivo = Write-SnIndice $entorno $origen $Skills
             if ($archivo) { $indices += $archivo }
         }
     }
@@ -336,7 +351,11 @@ function global:Invoke-ModoSinNode {
         Remove-Item $global:SnTemporal -Recurse -Force -ErrorAction SilentlyContinue
     }
 
-    Write-Host "`n  $($global:SnCopiados) archivo(s) instalados." -ForegroundColor Green
+    if ($global:SnSimular) {
+        Write-Host "`n  $($global:SnCopiados) archivo(s) se copiarian. Modo simulacion: no se escribio nada." -ForegroundColor Green
+    } else {
+        Write-Host "`n  $($global:SnCopiados) archivo(s) instalados." -ForegroundColor Green
+    }
     if ($global:SnOmitidos -gt 0) {
         Write-Host "  $($global:SnOmitidos) ya existian y no se tocaron." -ForegroundColor Yellow
     }

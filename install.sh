@@ -14,6 +14,9 @@
 #   --sin-node     copia las skills sin Node, sin instalar nada en el sistema
 #   --global       instala en la carpeta personal: sirve para todos los proyectos
 #   --local        instala solo en el proyecto actual
+#
+# --force, --envs=, --skills=, --dir= y --yes funcionan en los dos caminos: con
+# Node y sin Node.
 #   --yes, -y      instala los requisitos que falten sin preguntar
 #   --no-install   nunca instala nada: solo dice qué falta y cómo instalarlo
 # Cualquier otra opción se pasa tal cual al instalador (--all, --envs=…, etc.).
@@ -35,20 +38,46 @@ AQUI="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "")"
 
 SIN_NODE="$(var SIN_NODE 0)"
 SN_AMBITOS="$(var AMBITO "")"
+SN_ENTORNOS=""
+SN_SKILLS=""
+SN_DESTINO=""
+SN_FORZAR=0
+SN_SIMULAR=0
 ASUMIR_SI="$(var ASSUME_YES 0)"
+SN_ASUMIR="$(var ASSUME_YES 0)"
 SIN_INSTALAR="$(var NO_INSTALL 0)"
 SOLO_COMPROBAR="$(var CHECK 0)"
 ARGS_INSTALADOR=()
 
+# Las variables SN_* que se rellenan aquí las lee lib/sin-node.sh, que se carga
+# en este mismo shell; shellcheck no puede verlo.
+# shellcheck disable=SC2034
 for arg in "$@"; do
   case "$arg" in
-    -y|--yes) ASUMIR_SI=1; ARGS_INSTALADOR+=("$arg") ;;
+    -y|--yes) ASUMIR_SI=1; SN_ASUMIR=1; ARGS_INSTALADOR+=("$arg") ;;
     --no-install) SIN_INSTALAR=1 ;;
     # Copia las skills sin Node: no hace falta instalar nada en el sistema.
     --sin-node|--no-node) SIN_NODE=1 ;;
     # Ámbito de instalación, también para el modo sin Node.
     --global) SN_AMBITOS="${SN_AMBITOS:+$SN_AMBITOS }global"; ARGS_INSTALADOR+=("$arg") ;;
     --local|--proyecto) SN_AMBITOS="${SN_AMBITOS:+$SN_AMBITOS }proyecto"; ARGS_INSTALADOR+=("$arg") ;;
+    # Estas banderas las entienden los dos caminos: el instalador con Node las
+    # recibe tal cual, y el modo sin Node necesita que se traduzcan.
+    --force) SN_FORZAR=1; ARGS_INSTALADOR+=("$arg") ;;
+    --envs=*) SN_ENTORNOS="$(printf '%s' "${arg#--envs=}" | tr ',' ' ')"; ARGS_INSTALADOR+=("$arg") ;;
+    --skills=*) SN_SKILLS="$(printf '%s' "${arg#--skills=}" | tr ',' ' ')"; ARGS_INSTALADOR+=("$arg") ;;
+    --dir=*) SN_DESTINO="${arg#--dir=}"; ARGS_INSTALADOR+=("$arg") ;;
+    --dry-run) SN_SIMULAR=1; ARGS_INSTALADOR+=("$arg") ;;
+    --scope=*|--ambito=*)
+      # Sin sed: \b no existe en el sed de macOS, y aquí basta recorrer la lista.
+      SN_AMBITOS=""
+      for ambito_pedido in $(printf '%s' "${arg#*=}" | tr ',' ' '); do
+        case "$ambito_pedido" in
+          local|project|proyecto) SN_AMBITOS="${SN_AMBITOS:+$SN_AMBITOS }proyecto" ;;
+          global) SN_AMBITOS="${SN_AMBITOS:+$SN_AMBITOS }global" ;;
+        esac
+      done
+      ARGS_INSTALADOR+=("$arg") ;;
     # Comprobar es mirar, no tocar: --check nunca instala nada.
     --check|--doctor) SOLO_COMPROBAR=1; ARGS_INSTALADOR+=("$arg") ;;
     *) ARGS_INSTALADOR+=("$arg") ;;
@@ -99,6 +128,7 @@ cargar_sin_node() {
   if [ -n "$AQUI" ] && [ -r "$AQUI/lib/sin-node.sh" ]; then
     # shellcheck disable=SC1091
     . "$AQUI/lib/sin-node.sh"
+    # shellcheck disable=SC2034  # lo lee lib/sin-node.sh, que se carga aquí mismo
     SN_AQUI="$AQUI"
     return 0
   fi
