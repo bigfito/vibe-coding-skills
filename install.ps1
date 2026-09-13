@@ -11,6 +11,7 @@
 
   Opciones:
     --check        solo comprueba el sistema y no instala ni cambia nada
+    --sin-node     copia las skills sin Node, sin instalar nada en el sistema
                    (con `irm ... | iex`, que no admite argumentos, usa en su
                     lugar la variable de entorno AGENT_SKILLS_CHECK=1)
     -y, --yes      instala los requisitos que falten sin preguntar
@@ -25,11 +26,16 @@ $Repo = if ($env:AGENT_SKILLS_REPO) { $env:AGENT_SKILLS_REPO } else { 'github:bi
 $AsumirSi = ($env:AGENT_SKILLS_ASSUME_YES -eq '1')
 $SinInstalar = ($env:AGENT_SKILLS_NO_INSTALL -eq '1')
 $SoloComprobar = ($env:AGENT_SKILLS_CHECK -eq '1')
+$SinNode = ($env:AGENT_SKILLS_SIN_NODE -eq '1')
+$RawBase = if ($env:AGENT_SKILLS_RAW) { $env:AGENT_SKILLS_RAW } else { 'https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main' }
+$global:SnAqui = if ($PSScriptRoot) { $PSScriptRoot } else { '' }
 $ArgsInstalador = @()
 foreach ($a in $args) {
     switch -Regex ($a) {
         '^(-y|--yes)$'      { $AsumirSi = $true; $ArgsInstalador += $a }
         '^--no-install$'    { $SinInstalar = $true }
+        # Copia las skills sin Node: no instala nada en el sistema.
+        '^(--sin-node|--no-node)$' { $SinNode = $true }
         # Comprobar es mirar, no tocar: --check nunca instala nada.
         '^(--check|--doctor)$' { $SoloComprobar = $true; $ArgsInstalador += $a }
         default             { $ArgsInstalador += $a }
@@ -98,6 +104,46 @@ function Instrucciones-Manuales {
     Write-Host "  para que el PATH se actualice.`n" -ForegroundColor Yellow
 }
 
+# ------------------------------------------------------------- modo sin Node
+#
+# Las skills son archivos de texto: Node solo hace falta para el menu. La
+# logica vive en lib/sin-node.ps1, que se usa del disco si hay una copia del
+# repositorio y, si no, se descarga.
+
+function Import-SinNode {
+    if ($global:SnAqui) {
+        $local = Join-Path $global:SnAqui 'lib\sin-node.ps1'
+        if (Test-Path $local) { . $local; return $true }
+    }
+    $temporal = Join-Path ([System.IO.Path]::GetTempPath()) 'agent-skills-sin-node.ps1'
+    try {
+        Invoke-WebRequest -UseBasicParsing "$RawBase/lib/sin-node.ps1" -OutFile $temporal
+        . $temporal
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+# Propone el modo sin Node como salida a un callejon sin salida.
+function Invoke-OfrecerSinNode {
+    if ($SoloComprobar) { return $false }
+
+    Write-Host "`n  Hay otra salida: puedo instalar las skills sin Node."
+    Write-Host "  Son archivos de texto; las copio en tu proyecto y no instalo nada en el sistema."
+
+    if (-not $SinNode -and -not $AsumirSi) {
+        if (-not (Hay-Terminal)) { return $false }
+        if (-not (Confirmar 'Las instalo asi?')) { return $false }
+    }
+
+    if (-not (Import-SinNode)) {
+        Escribe-Error "  No se pudo cargar el modo sin Node."
+        return $false
+    }
+    return (Invoke-ModoSinNode)
+}
+
 # ------------------------------------------------------- comprobar requisitos
 
 function Comprueba-Requisitos {
@@ -155,6 +201,12 @@ Write-Host "  Sistema: Windows $([System.Environment]::OSVersion.Version.ToStrin
 if ($Gestor) { Write-Host "  Gestor:  $($Gestor.Nombre)" }
 else { Write-Host "  Gestor:  ninguno conocido" -ForegroundColor Yellow }
 
+# Si se pidio explicitamente, ni siquiera se miran los requisitos.
+if ($SinNode) {
+    if (-not (Import-SinNode)) { Escribe-Error "  No se pudo cargar el modo sin Node."; exit 1 }
+    if (Invoke-ModoSinNode) { exit 0 } else { exit 1 }
+}
+
 $estado = Comprueba-Requisitos
 
 if ($estado.Faltantes.Count -gt 0) {
@@ -163,6 +215,7 @@ if ($estado.Faltantes.Count -gt 0) {
 
     if (-not $Gestor) {
         Escribe-Error "  No encontre winget, Chocolatey ni Scoop, asi que no puedo instalarlos por ti."
+        if (Invoke-OfrecerSinNode) { exit 0 }
         Instrucciones-Manuales
         exit 1
     }
@@ -200,6 +253,7 @@ if ($estado.Faltantes.Count -gt 0) {
         }
         if (-not (Confirmar 'Los instalo ahora?')) {
             Escribe-Aviso "  No se instalo nada."
+            if (Invoke-OfrecerSinNode) { exit 0 }
             Instrucciones-Manuales
             exit 1
         }
@@ -211,6 +265,7 @@ if ($estado.Faltantes.Count -gt 0) {
         & $Gestor.Bin @o
         if ($LASTEXITCODE -ne 0) {
             Escribe-Error "  La instalacion fallo (codigo $LASTEXITCODE)."
+            if (Invoke-OfrecerSinNode) { exit 0 }
             Instrucciones-Manuales
             exit 1
         }

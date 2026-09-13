@@ -11,6 +11,7 @@
 #
 # Opciones:
 #   --check        solo comprueba el sistema y no instala ni cambia nada
+#   --sin-node     copia las skills sin Node, sin instalar nada en el sistema
 #   --yes, -y      instala los requisitos que falten sin preguntar
 #   --no-install   nunca instala nada: solo dice qué falta y cómo instalarlo
 # Cualquier otra opción se pasa tal cual al instalador (--all, --envs=…, etc.).
@@ -20,6 +21,10 @@ set -u
 REPO="${AGENT_SKILLS_REPO:-github:bigfito/vibe-coding-skills}"
 NODE_MINIMO=18
 
+RAW_BASE="${AGENT_SKILLS_RAW:-https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main}"
+AQUI="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "")"
+
+SIN_NODE="${AGENT_SKILLS_SIN_NODE:-0}"
 ASUMIR_SI="${AGENT_SKILLS_ASSUME_YES:-0}"
 SIN_INSTALAR="${AGENT_SKILLS_NO_INSTALL:-0}"
 SOLO_COMPROBAR="${AGENT_SKILLS_CHECK:-0}"
@@ -29,6 +34,8 @@ for arg in "$@"; do
   case "$arg" in
     -y|--yes) ASUMIR_SI=1; ARGS_INSTALADOR+=("$arg") ;;
     --no-install) SIN_INSTALAR=1 ;;
+    # Copia las skills sin Node: no hace falta instalar nada en el sistema.
+    --sin-node|--no-node) SIN_NODE=1 ;;
     # Comprobar es mirar, no tocar: --check nunca instala nada.
     --check|--doctor) SOLO_COMPROBAR=1; ARGS_INSTALADOR+=("$arg") ;;
     *) ARGS_INSTALADOR+=("$arg") ;;
@@ -52,6 +59,52 @@ aviso()  { printf '\n%s%s%s\n' "$Y" "$1" "$N"; }
 error()  { printf '\n%s%s%s\n' "$R" "$1" "$N"; }
 cmd()    { printf '      %s%s%s\n' "$G" "$1" "$N"; }
 hay()    { command -v "$1" >/dev/null 2>&1; }
+
+# ------------------------------------------------------------- modo sin Node
+#
+# Las skills son archivos de texto: Node solo hace falta para el menú. Si no se
+# puede o no se quiere instalar, este camino las copia igualmente. La lógica
+# vive en lib/sin-node.sh, que se usa del disco si hay una copia del
+# repositorio y, si no, se descarga junto al resto.
+
+descargar() {
+  if command -v curl >/dev/null 2>&1; then curl -fsSL "$1" -o "$2"; return $?; fi
+  if command -v wget >/dev/null 2>&1; then wget -qO "$2" "$1"; return $?; fi
+  return 127
+}
+
+cargar_sin_node() {
+  if [ -n "$AQUI" ] && [ -r "$AQUI/lib/sin-node.sh" ]; then
+    # shellcheck disable=SC1091
+    . "$AQUI/lib/sin-node.sh"
+    SN_AQUI="$AQUI"
+    return 0
+  fi
+  local temporal="${TMPDIR:-/tmp}/agent-skills-sin-node.sh"
+  if descargar "$RAW_BASE/lib/sin-node.sh" "$temporal"; then
+    # shellcheck disable=SC1090
+    . "$temporal"
+    return 0
+  fi
+  return 1
+}
+
+# Propone el modo sin Node como salida a un callejón sin salida. Devuelve 0 si
+# las skills quedaron instaladas.
+ofrecer_sin_node() {
+  [ "$SOLO_COMPROBAR" = "1" ] && return 1
+
+  printf '\n  %sHay otra salida:%s puedo instalar las skills sin Node.\n' "$B" "$N"
+  printf '  Son archivos de texto; las copio en tu proyecto y no instalo nada en el sistema.\n'
+
+  if [ "$SIN_NODE" != "1" ] && [ "$ASUMIR_SI" != "1" ]; then
+    hay_terminal || return 1
+    confirmar "¿Las instalo así?" || return 1
+  fi
+
+  cargar_sin_node || { error "  No se pudo cargar el modo sin Node."; return 1; }
+  modo_sin_node
+}
 
 # ---------------------------------------------------------- detectar sistema
 
@@ -236,6 +289,13 @@ elegir_gestor
 if [ -n "$GESTOR" ]; then printf '  Gestor:  %s\n' "$GESTOR_NOMBRE"
 else printf '  Gestor:  %sninguno conocido%s\n' "$Y" "$N"; fi
 
+# Si se pidió explícitamente, ni siquiera se miran los requisitos.
+if [ "$SIN_NODE" = "1" ]; then
+  cargar_sin_node || { error "  No se pudo cargar el modo sin Node."; exit 1; }
+  modo_sin_node
+  exit $?
+fi
+
 comprobar_requisitos
 
 if [ "${#FALTANTES[@]}" -gt 0 ]; then
@@ -244,6 +304,7 @@ if [ "${#FALTANTES[@]}" -gt 0 ]; then
 
   if [ -z "$GESTOR" ]; then
     error "  No encontré un gestor de paquetes conocido, así que no puedo instalarlos por ti."
+    ofrecer_sin_node && exit 0
     instrucciones_manuales
     exit 1
   fi
@@ -288,6 +349,7 @@ if [ "${#FALTANTES[@]}" -gt 0 ]; then
     fi
     if ! confirmar "¿Los instalo ahora?"; then
       aviso "  No se instaló nada."
+      ofrecer_sin_node && exit 0
       instrucciones_manuales
       exit 1
     fi
@@ -302,6 +364,7 @@ if [ "${#FALTANTES[@]}" -gt 0 ]; then
   printf '    %s$ %s%s\n' "$D" "$ORDEN_INSTALAR" "$N"
   if ! eval "$ORDEN_INSTALAR"; then
     error "  La instalación falló."
+    ofrecer_sin_node && exit 0
     instrucciones_manuales
     exit 1
   fi

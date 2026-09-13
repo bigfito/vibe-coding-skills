@@ -158,11 +158,28 @@ Para funcionar hacen falta cuatro programas: **Node.js 18 o superior**, **npm**,
 | Tu sistema pide contraseña de administrador | Te la pide la propia orden `sudo`, no el instalador |
 | No hay gestor de paquetes conocido | Te dice cómo instalarlo a mano, paso a paso |
 | Tu Linux solo ofrece una versión antigua de Node | Te lo dice y te da los comandos de `nvm` para tener una moderna |
+| No quieres instalar nada en tu computador | Te ofrece el **modo sin Node**: copia las skills y no instala nada |
 | Se instaló pero la terminal aún no lo ve | Te avisa de que cierres y vuelvas a abrir la terminal |
 
 En todos los casos **comprueba el resultado**: después de instalar verifica que los programas existan de verdad, en lugar de fiarse de que el gestor dijera que fue bien.
 
 Lo que el instalador **no** hace: no cambia versiones que ya tengas funcionando, no instala nada fuera de esa lista de cuatro programas, no modifica tu sistema si respondes que no, y no toca nada fuera de la carpeta del proyecto cuando copia las skills.
+
+## Modo sin Node: instalar sin tocar tu computador
+
+Las skills son archivos de texto. Node.js solo hace falta para el menú, así que si no puedes instalarlo (no tienes permisos de administrador) o simplemente no quieres, hay un camino que no instala nada en el sistema:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.sh | bash -s -- --sin-node
+```
+
+```powershell
+$env:AGENT_SKILLS_SIN_NODE=1; irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
+```
+
+Descarga las skills, te pregunta la carpeta y las herramientas, y copia los archivos. Nada más. Y si estás en medio de la instalación normal y dices que **no** a instalar Node, el propio instalador te ofrece este camino.
+
+La diferencia con la instalación normal: el menú es más sencillo, porque instala **todas** las skills (en la normal puedes elegir cuáles). El resultado en tu proyecto es idéntico, archivo por archivo.
 
 ---
 
@@ -262,9 +279,10 @@ npx github:bigfito/vibe-coding-skills --all --dry-run      # simula, no escribe 
 | `--dry-run` | Muestra qué haría, sin tocar nada |
 | `--check` | Solo diagnostica el entorno: no instala ni cambia nada |
 | `--no-install` | Nunca instala requisitos: solo dice qué falta y cómo instalarlo |
+| `--sin-node` | Copia las skills sin Node, sin instalar nada en el sistema |
 | `--help` | Ayuda |
 
-También se pueden fijar por variable de entorno: `AGENT_SKILLS_ASSUME_YES=1` equivale a `--yes`, `AGENT_SKILLS_NO_INSTALL=1` a `--no-install` y `AGENT_SKILLS_CHECK=1` a `--check` (útil en PowerShell, donde `irm … | iex` no admite argumentos).
+También se pueden fijar por variable de entorno: `AGENT_SKILLS_ASSUME_YES=1` equivale a `--yes`, `AGENT_SKILLS_NO_INSTALL=1` a `--no-install` `AGENT_SKILLS_CHECK=1` a `--check` y `AGENT_SKILLS_SIN_NODE=1` a `--sin-node` (útiles en PowerShell, donde `irm … | iex` no admite argumentos).
 
 **Instalación manual:** cada skill tiene su propio `INSTALL.md` dentro de `skills/`, con los cuatro caminos explicados, y un archivo `.skill` que se instala directamente en Claude.ai o Cowork.
 

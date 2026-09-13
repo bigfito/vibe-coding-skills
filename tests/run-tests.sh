@@ -58,6 +58,10 @@ crear_stub() {
   chmod +x "$destino"
 }
 
+# PowerShell puede no estar instalado: las pruebas que lo necesitan se saltan.
+PWSH="$(command -v pwsh 2>/dev/null || true)"
+[ -z "$PWSH" ] && [ -x /opt/pwsh/pwsh ] && PWSH=/opt/pwsh/pwsh
+
 # ---------------------------------------------------------------- 1. sintaxis
 
 titulo "1. Sintaxis"
@@ -74,14 +78,16 @@ else falla "lib/install.mjs parsea"; fi
 
 if bash -n "$RAIZ/install.sh"; then pasa "install.sh parsea"; else falla "install.sh parsea"; fi
 
-if command -v pwsh >/dev/null 2>&1; then
-  if pwsh -NoProfile -Command "
+if [ -n "$PWSH" ]; then
+  if "$PWSH" -NoProfile -Command "
       \$e=\$null
-      [System.Management.Automation.Language.Parser]::ParseFile('$RAIZ/install.ps1',[ref]\$null,[ref]\$e) > \$null
-      if (\$e.Count -gt 0) { \$e | ForEach-Object { \$_.Message }; exit 1 }" >/dev/null 2>&1
-  then pasa "install.ps1 parsea"; else falla "install.ps1 parsea"; fi
+      foreach (\$f in @('$RAIZ/install.ps1', '$RAIZ/lib/sin-node.ps1')) {
+        [System.Management.Automation.Language.Parser]::ParseFile(\$f,[ref]\$null,[ref]\$e) > \$null
+        if (\$e.Count -gt 0) { \$e | ForEach-Object { \$_.Message }; exit 1 }
+      }" >/dev/null 2>&1
+  then pasa "install.ps1 y lib/sin-node.ps1 parsean"; else falla "install.ps1 y lib/sin-node.ps1 parsean"; fi
 else
-  salta "install.ps1 parsea (pwsh no está instalado en esta máquina)"
+  salta "sintaxis de PowerShell (pwsh no está instalado en esta máquina)"
 fi
 
 # --------------------------------------------- 2. lógica de preflight (unidad)
@@ -159,7 +165,7 @@ STUB="$TMP/bin"
 LOG="$TMP/apt.log"
 mkdir -p "$STUB"
 # node y las herramientas de shell que install.sh usa; git queda fuera a propósito.
-for real in node npm npx bash sh env uname grep sed awk tr id cat setsid chmod curl wget dirname rm mkdir; do
+for real in node npm npx bash sh env uname grep sed awk tr id cat setsid chmod curl wget dirname basename rm mkdir cp find tar gzip mktemp head; do
   ruta="$(command -v "$real" 2>/dev/null)" && ln -sf "$ruta" "$STUB/$real"
 done
 
@@ -374,10 +380,7 @@ contiene "$salida" "Todo listo" "install.sh arranca el instalador directamente"
 
 titulo "6. Arranque install.ps1"
 
-PWSH="$(command -v pwsh 2>/dev/null || true)"
-[ -z "$PWSH" ] && [ -x /opt/pwsh/pwsh ] && PWSH=/opt/pwsh/pwsh
-
-if [ -z "$PWSH" ]; then
+if [ -z "${PWSH:-}" ]; then
   salta "pruebas de install.ps1 (PowerShell no está instalado en esta máquina)"
 else
   PS_STUB="$TMP/psbin"
@@ -584,6 +587,89 @@ contiene "$BAT" "%*" "instalar-windows.bat reenvía los argumentos"
 contiene "$BAT" "pause" "instalar-windows.bat deja la ventana abierta"
 
 rm -f "$STUB/git" "$LANZ_NPX_LOG"
+
+# --------------------------------------------------------- 9. Modo sin Node
+
+titulo "9. Modo sin Node"
+
+if bash -n "$RAIZ/lib/sin-node.sh"; then pasa "lib/sin-node.sh parsea"; else falla "lib/sin-node.sh parsea"; fi
+
+SN_PROY="$TMP/sin-node"
+mkdir -p "$SN_PROY"
+
+# Con una copia local no descarga nada: copia directamente.
+salida="$(cd "$SN_PROY" && PATH="$STUB" AGENT_SKILLS_SRC="$RAIZ" bash "$RAIZ/install.sh" --sin-node < /dev/null 2>&1)"
+contiene "$salida" "sin Node" "instala sin Node cuando se pide con --sin-node"
+contiene "$salida" "archivo(s) instalados" "informa de cuántos archivos copió"
+[ -f "$SN_PROY/.claude/skills/solution-architect/SKILL.md" ] && pasa "sin Node: copia las skills de Claude" || falla "sin Node: copia las skills de Claude"
+[ -f "$SN_PROY/.claude/agents/solution-architect.md" ] && pasa "sin Node: copia los subagentes" || falla "sin Node: copia los subagentes"
+[ -f "$SN_PROY/.cursor/rules/java-developer.mdc" ] && pasa "sin Node: copia las reglas de Cursor" || falla "sin Node: copia las reglas de Cursor"
+[ -f "$SN_PROY/.agents/workflows/solution-architect.md" ] && pasa "sin Node: separa los flujos de Antigravity" || falla "sin Node: separa los flujos de Antigravity"
+[ -f "$SN_PROY/.claude/skills/solution-architect/assets/PLAN-template.md" ] && pasa "sin Node: copia los assets" || falla "sin Node: copia los assets"
+
+# Lo que copia sin Node tiene que ser exactamente lo mismo que copia con Node.
+CON_NODE="$TMP/con-node"
+mkdir -p "$CON_NODE"
+(cd "$CON_NODE" && node "$RAIZ/bin/agent-skills.cjs" --all --yes >/dev/null 2>&1)
+if diff -r "$CON_NODE" "$SN_PROY" >/dev/null 2>&1; then pasa "sin Node instala exactamente lo mismo que con Node"
+else falla "sin Node instala exactamente lo mismo que con Node" "$(diff -rq "$CON_NODE" "$SN_PROY" | head -5)"; fi
+
+# Segunda pasada: respeta lo que ya existe.
+salida="$(cd "$SN_PROY" && PATH="$STUB" AGENT_SKILLS_SRC="$RAIZ" bash "$RAIZ/install.sh" --sin-node < /dev/null 2>&1)"
+contiene "$salida" "ya existían y no se tocaron" "sin Node es idempotente"
+
+# Descarga de verdad: se empaqueta el repositorio y se sirve por file://.
+if hay_tar="$(command -v tar)"; then
+  SN_DESCARGA="$TMP/sin-node-descarga"
+  mkdir -p "$SN_DESCARGA"
+  (cd "$RAIZ" && tar -czf "$TMP/repo.tar.gz" --transform 's,^,repo-main/,' skills >/dev/null 2>&1) \
+    || tar -czf "$TMP/repo.tar.gz" -C "$RAIZ" skills >/dev/null 2>&1
+  cp "$RAIZ/install.sh" "$TMP/install-suelto.sh"
+  salida="$(cd "$SN_DESCARGA" && PATH="$STUB" AGENT_SKILLS_RAW="file://$RAIZ" AGENT_SKILLS_TARBALL="file://$TMP/repo.tar.gz" \
+    bash "$TMP/install-suelto.sh" --sin-node < /dev/null 2>&1)"
+  contiene "$salida" "Descargando" "sin Node descarga las skills si no hay copia local"
+  [ -f "$SN_DESCARGA/.claude/skills/java-developer/SKILL.md" ] \
+    && pasa "sin Node instala lo descargado" || falla "sin Node instala lo descargado" "$salida"
+else
+  salta "descarga del modo sin Node (falta tar)"
+fi
+
+# Se ofrece como salida cuando el usuario rechaza instalar Node.
+if command -v script >/dev/null 2>&1; then
+  SN_OFERTA="$TMP/sin-node-oferta"
+  SN_ELEGIDA="$TMP/sin-node-elegida"
+  mkdir -p "$SN_OFERTA" "$SN_ELEGIDA"
+  rm -f "$LOG"
+  transcripcion="$TMP/pty-sn.txt"
+  {
+    sleep 1; printf 'n\n'; sleep 0.8; printf 's\n'; sleep 0.8
+    printf '%s\n' "$SN_ELEGIDA"; sleep 0.8; printf '1\n'; sleep 1
+  } | script -q -c "cd '$SN_OFERTA' && env PATH='$STUB' AGENT_SKILLS_SRC='$RAIZ' bash '$RAIZ/install.sh'" "$transcripcion" >/dev/null 2>&1
+  salida="$(cat "$transcripcion")"
+  contiene "$salida" "Hay otra salida" "ofrece el modo sin Node al rechazar la instalación"
+  [ ! -f "$LOG" ] && pasa "el modo sin Node no toca el gestor de paquetes" || falla "el modo sin Node no toca el gestor de paquetes"
+  [ -f "$SN_ELEGIDA/.claude/skills/java-developer/SKILL.md" ] \
+    && pasa "sin Node instala en la carpeta elegida" || falla "sin Node instala en la carpeta elegida"
+  [ ! -d "$SN_ELEGIDA/.cursor" ] && pasa "sin Node respeta las herramientas elegidas" || falla "sin Node respeta las herramientas elegidas"
+else
+  salta "oferta interactiva del modo sin Node (falta el comando 'script')"
+fi
+
+# Comprobar sigue siendo comprobar: no ofrece instalar de ninguna manera.
+salida="$(cd "$TMP" && PATH="$STUB" bash "$RAIZ/install.sh" --check < /dev/null 2>&1)"
+no_contiene "$salida" "Hay otra salida" "--check no ofrece el modo sin Node"
+
+# Versión de PowerShell.
+if [ -n "${PWSH:-}" ]; then
+  SN_PS="$TMP/sin-node-ps"
+  mkdir -p "$SN_PS"
+  salida="$(cd "$SN_PS" && AGENT_SKILLS_SRC="$RAIZ" "$PWSH" -NoProfile -File "$RAIZ/install.ps1" --sin-node < /dev/null 2>&1)"
+  contiene "$salida" "archivo(s) instalados" "install.ps1 instala sin Node"
+  if diff -r "$CON_NODE" "$SN_PS" >/dev/null 2>&1; then pasa "install.ps1 sin Node copia lo mismo que con Node"
+  else falla "install.ps1 sin Node copia lo mismo que con Node" "$(diff -rq "$CON_NODE" "$SN_PS" | head -5)"; fi
+else
+  salta "modo sin Node de PowerShell (PowerShell no está instalado)"
+fi
 
 # ------------------------------------------------------------------- resumen
 
