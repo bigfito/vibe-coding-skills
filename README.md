@@ -18,11 +18,11 @@
 ## 📖 Índice
 
 1. [¿Qué es esto y para qué sirve?](#-qué-es-esto-y-para-qué-sirve)
-2. [Instalación en 4 pasos](#-instalación-en-4-pasos)
-3. [¿Global o por proyecto?](#-global-o-por-proyecto)
-4. [¿Qué necesita mi computador?](#-qué-necesita-mi-computador)
-5. [Si algo sale mal](#-si-algo-sale-mal)
-6. [Las siete skills](#-las-siete-skills)
+2. [Las siete skills](#-las-siete-skills)
+3. [¿Qué necesita mi computador?](#-qué-necesita-mi-computador)
+4. [¿Global o por proyecto?](#-global-o-por-proyecto)
+5. [Instalación en 4 pasos](#-instalación-en-4-pasos)
+6. [Si algo sale mal](#-si-algo-sale-mal)
 7. [Mantenimiento](#-mantenimiento)
 8. [Opciones avanzadas](#-opciones-avanzadas)
 
@@ -61,7 +61,141 @@ Puedes instalarlas en una o en todas.
 
 ---
 
+## 📚 Las siete skills
+
+| | Skill | Para qué sirve |
+|:---:|---|---|
+| 🏗️ | `solution-architect` | Te entrevista para entender qué necesitas y produce arquitectura, modelo de datos, pantallas y un plan por fases |
+| 📋 | `project-manager` | Plan de proyecto, cronograma, dependencias, riesgos, métricas y reportes de estado |
+| 🧪 | `prototype-kickoff` | Coordina un equipo de agentes para construir un prototipo completo que funcione |
+| ☕ | `java-developer` | Escribe Java 25 y Spring Boot legible y mantenible |
+| 🐍 | `python-developer` | Escribe Python 3.14, FastAPI y Django con buenas prácticas |
+| ☁️ | `gcp-expert` | Arquitectura, datos, redes y seguridad en Google Cloud |
+| 🟧 | `aws-expert` | Arquitectura, serverless, datos y DevOps en Amazon Web Services |
+
+> [!TIP]
+> Instala solo las que te sirvan. Si no trabajas con Java, no instales `java-developer`.
+
+---
+
+## 🧰 ¿Qué necesita mi computador?
+
+Cuatro programas: **Node.js 18+**, **npm**, **npx** y **git**. 🙌 **No tienes que instalarlos tú.**
+
+### 🔎 Compruébalo sin instalar nada
+
+**🪟 Windows (PowerShell)**
+
+```powershell
+$env:AGENT_SKILLS_CHECK=1; irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
+```
+
+**🍎 macOS · 🐧 Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.sh | bash -s -- --check
+```
+
+Te responde dos cosas y **termina sin tocar nada**:
+
+1. ✅ Si tu sistema tiene lo necesario, y con qué comando instalaría lo que falte.
+2. ✅ Qué asistentes tienes instalados y en qué carpeta quedarían las skills de cada uno.
+
+Funciona **aunque todavía no tengas Node.js**.
+
+### 🤔 Qué hace el instalador en cada caso
+
+| Situación | Qué hace |
+|---|---|
+| ✅ No te falta nada | Sigue de largo y te muestra el menú |
+| 📦 Falta algo y hay gestor de paquetes | Te enseña la orden exacta, **te pide permiso** y lo instala |
+| 🚫 Dices que no | No toca nada; te deja las instrucciones para hacerlo a mano |
+| 🤖 Nadie puede responder (script automático) | Se detiene: **nunca instala sin autorización** |
+| 🔐 Tu sistema pide contraseña | Te la pide la propia orden `sudo`, no el instalador |
+| ❓ No hay gestor de paquetes conocido | Te dice cómo instalarlo a mano, paso a paso |
+| 🕰️ Tu Linux solo trae un Node antiguo | Te lo dice y te da los comandos de `nvm` |
+| 🙅 No quieres instalar nada | Te ofrece el **[modo sin Node](#-modo-sin-node)** |
+| 🧩 No tienes ningún asistente instalado | Te lo dice y te deja seguir: las carpetas quedan listas |
+| 🔄 Se instaló pero la terminal no lo ve | Te avisa de que la cierres y la vuelvas a abrir |
+
+> [!IMPORTANT]
+> En todos los casos **comprueba el resultado**: después de instalar verifica que los programas existan de verdad, en lugar de fiarse de que el gestor dijera que fue bien.
+
+**Lo que el instalador *no* hace:** ❌ no cambia versiones que ya te funcionan · ❌ no instala nada fuera de esos cuatro programas · ❌ no modifica tu sistema si respondes que no · ❌ no toca nada fuera de las carpetas de skills.
+
+### 🪶 Modo sin Node
+
+¿No puedes instalar Node (sin permisos de administrador) o no quieres? Las skills son solo archivos de texto:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.sh | bash -s -- --sin-node
+```
+
+```powershell
+$env:AGENT_SKILLS_SIN_NODE=1; irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
+```
+
+Descarga las skills, te pregunta dónde las quieres y las copia. **Nada más.** Y si dices que **no** a instalar Node durante la instalación normal, el propio instalador te ofrece este camino.
+
+> [!NOTE]
+> Única diferencia: instala **todas** las skills (en la normal puedes elegir cuáles). El resultado es idéntico, archivo por archivo.
+
+---
+
+## 🌍 ¿Global o por proyecto?
+
+| | 🌍 **Global** | 📁 **Por proyecto** |
+|---|---|---|
+| **Dónde** | Tu carpeta personal | La carpeta del proyecto |
+| **Para qué** | Todos tus proyectos, también los de mañana | Solo ese proyecto |
+| **Se comparte con tu equipo** | ❌ No | ✅ Sí, si lo subes a git |
+| **Cómo pedirlo** | `--global` *(por defecto)* | `--local` |
+
+> [!TIP]
+> **Lo normal es la global.** La instalación por proyecto tiene sentido cuando quieres que tu equipo reciba las mismas skills al clonar el repositorio.
+
+Si eliges **por proyecto** y no estás dentro de la carpeta del proyecto, el instalador te la preguntará: puedes **arrastrar la carpeta hasta la ventana** de la terminal y pulsar Enter. También puedes indicarla de antemano con `--dir=/ruta/de/mi/proyecto`.
+
+<details>
+<summary><b>📂 Dónde queda cada archivo</b></summary>
+
+<br>
+
+| Herramienta | 🌍 Global | 📁 Por proyecto |
+|---|---|---|
+| 🤖 Claude Code | `~/.claude/skills/` y `~/.claude/agents/` | `.claude/skills/` y `.claude/agents/` |
+| ✨ Cursor | `~/.cursor/rules/` | `.cursor/rules/` |
+| 🧠 Junie | `~/.junie/rules/` + índice en `~/.junie/AGENTS.md` | `.junie/rules/` |
+| 🚀 Antigravity | `~/.gemini/antigravity/` + índice en `~/.gemini/AGENTS.md` | `.agents/rules/` y `.agents/workflows/` |
+
+- En Windows, `~` es tu carpeta de usuario (`C:\Users\TuNombre`).
+- Son **carpetas ocultas** (empiezan por punto). Para verlas: macOS **⌘ + Shift + .** en Finder; Windows **Ver → Elementos ocultos**.
+- Si usas `CLAUDE_CONFIG_DIR`, Claude Code se instala ahí en lugar de en `~/.claude`.
+
+</details>
+
+<details>
+<summary><b>⚠️ Un detalle por herramienta (importante para la instalación global)</b></summary>
+
+<br>
+
+Las cuatro documentan su carpeta personal de forma distinta:
+
+- 🤖 **Claude Code** — documenta `~/.claude/skills` como carpeta personal: lo que se instala ahí se carga en todas tus sesiones. ✅ Nada más que hacer.
+- ✨ **Cursor** — su vía oficial son las *User Rules* (Ajustes → Rules), que son texto en la configuración, no archivos. Las versiones que leen `~/.cursor/rules` tomarán las skills de ahí; si la tuya no lo hace, copia el contenido de la regla que te interese en Ajustes.
+- 🧠 **Junie** — lee sus guías globales de `~/.junie/AGENTS.md`. Las reglas se copian a `~/.junie/rules/` y en ese archivo se añade **un índice** que las señala.
+- 🚀 **Antigravity** — igual: las reglas van a `~/.gemini/antigravity/` y el índice a `~/.gemini/AGENTS.md`.
+
+> [!NOTE]
+> El índice va entre marcas (`<!-- agent-skills: inicio -->` … `<!-- agent-skills: fin -->`). Se reescribe entero en cada instalación y **nunca toca lo que hayas escrito alrededor**.
+
+</details>
+
+---
+
 ## 🚀 Instalación en 4 pasos
+
+Ya sabes **qué skills hay**, **qué necesita tu computador** y **dónde van a quedar**. Esto es lo único que falta hacer.
 
 > [!NOTE]
 > Si nunca has usado una terminal, no te preocupes: sigue estos pasos en orden. Toma unos **tres minutos**.
@@ -210,121 +344,6 @@ Si instalaste `solution-architect`, en lugar de lanzarse a escribir código debe
 
 ---
 
-## 🌍 ¿Global o por proyecto?
-
-| | 🌍 **Global** | 📁 **Por proyecto** |
-|---|---|---|
-| **Dónde** | Tu carpeta personal | La carpeta del proyecto |
-| **Para qué** | Todos tus proyectos, también los de mañana | Solo ese proyecto |
-| **Se comparte con tu equipo** | ❌ No | ✅ Sí, si lo subes a git |
-| **Cómo pedirlo** | `--global` *(por defecto)* | `--local` |
-
-> [!TIP]
-> **Lo normal es la global.** La instalación por proyecto tiene sentido cuando quieres que tu equipo reciba las mismas skills al clonar el repositorio.
-
-Si eliges **por proyecto** y no estás dentro de la carpeta del proyecto, el instalador te la preguntará: puedes **arrastrar la carpeta hasta la ventana** de la terminal y pulsar Enter. También puedes indicarla de antemano con `--dir=/ruta/de/mi/proyecto`.
-
-<details>
-<summary><b>📂 Dónde queda cada archivo</b></summary>
-
-<br>
-
-| Herramienta | 🌍 Global | 📁 Por proyecto |
-|---|---|---|
-| 🤖 Claude Code | `~/.claude/skills/` y `~/.claude/agents/` | `.claude/skills/` y `.claude/agents/` |
-| ✨ Cursor | `~/.cursor/rules/` | `.cursor/rules/` |
-| 🧠 Junie | `~/.junie/rules/` + índice en `~/.junie/AGENTS.md` | `.junie/rules/` |
-| 🚀 Antigravity | `~/.gemini/antigravity/` + índice en `~/.gemini/AGENTS.md` | `.agents/rules/` y `.agents/workflows/` |
-
-- En Windows, `~` es tu carpeta de usuario (`C:\Users\TuNombre`).
-- Son **carpetas ocultas** (empiezan por punto). Para verlas: macOS **⌘ + Shift + .** en Finder; Windows **Ver → Elementos ocultos**.
-- Si usas `CLAUDE_CONFIG_DIR`, Claude Code se instala ahí en lugar de en `~/.claude`.
-
-</details>
-
-<details>
-<summary><b>⚠️ Un detalle por herramienta (importante para la instalación global)</b></summary>
-
-<br>
-
-Las cuatro documentan su carpeta personal de forma distinta:
-
-- 🤖 **Claude Code** — documenta `~/.claude/skills` como carpeta personal: lo que se instala ahí se carga en todas tus sesiones. ✅ Nada más que hacer.
-- ✨ **Cursor** — su vía oficial son las *User Rules* (Ajustes → Rules), que son texto en la configuración, no archivos. Las versiones que leen `~/.cursor/rules` tomarán las skills de ahí; si la tuya no lo hace, copia el contenido de la regla que te interese en Ajustes.
-- 🧠 **Junie** — lee sus guías globales de `~/.junie/AGENTS.md`. Las reglas se copian a `~/.junie/rules/` y en ese archivo se añade **un índice** que las señala.
-- 🚀 **Antigravity** — igual: las reglas van a `~/.gemini/antigravity/` y el índice a `~/.gemini/AGENTS.md`.
-
-> [!NOTE]
-> El índice va entre marcas (`<!-- agent-skills: inicio -->` … `<!-- agent-skills: fin -->`). Se reescribe entero en cada instalación y **nunca toca lo que hayas escrito alrededor**.
-
-</details>
-
----
-
-## 🧰 ¿Qué necesita mi computador?
-
-Cuatro programas: **Node.js 18+**, **npm**, **npx** y **git**. 🙌 **No tienes que instalarlos tú.**
-
-### 🔎 Compruébalo sin instalar nada
-
-**🪟 Windows (PowerShell)**
-
-```powershell
-$env:AGENT_SKILLS_CHECK=1; irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
-```
-
-**🍎 macOS · 🐧 Linux**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.sh | bash -s -- --check
-```
-
-Te responde dos cosas y **termina sin tocar nada**:
-
-1. ✅ Si tu sistema tiene lo necesario, y con qué comando instalaría lo que falte.
-2. ✅ Qué asistentes tienes instalados y en qué carpeta quedarían las skills de cada uno.
-
-Funciona **aunque todavía no tengas Node.js**.
-
-### 🤔 Qué hace el instalador en cada caso
-
-| Situación | Qué hace |
-|---|---|
-| ✅ No te falta nada | Sigue de largo y te muestra el menú |
-| 📦 Falta algo y hay gestor de paquetes | Te enseña la orden exacta, **te pide permiso** y lo instala |
-| 🚫 Dices que no | No toca nada; te deja las instrucciones para hacerlo a mano |
-| 🤖 Nadie puede responder (script automático) | Se detiene: **nunca instala sin autorización** |
-| 🔐 Tu sistema pide contraseña | Te la pide la propia orden `sudo`, no el instalador |
-| ❓ No hay gestor de paquetes conocido | Te dice cómo instalarlo a mano, paso a paso |
-| 🕰️ Tu Linux solo trae un Node antiguo | Te lo dice y te da los comandos de `nvm` |
-| 🙅 No quieres instalar nada | Te ofrece el **[modo sin Node](#-modo-sin-node)** |
-| 🧩 No tienes ningún asistente instalado | Te lo dice y te deja seguir: las carpetas quedan listas |
-| 🔄 Se instaló pero la terminal no lo ve | Te avisa de que la cierres y la vuelvas a abrir |
-
-> [!IMPORTANT]
-> En todos los casos **comprueba el resultado**: después de instalar verifica que los programas existan de verdad, en lugar de fiarse de que el gestor dijera que fue bien.
-
-**Lo que el instalador *no* hace:** ❌ no cambia versiones que ya te funcionan · ❌ no instala nada fuera de esos cuatro programas · ❌ no modifica tu sistema si respondes que no · ❌ no toca nada fuera de las carpetas de skills.
-
-### 🪶 Modo sin Node
-
-¿No puedes instalar Node (sin permisos de administrador) o no quieres? Las skills son solo archivos de texto:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.sh | bash -s -- --sin-node
-```
-
-```powershell
-$env:AGENT_SKILLS_SIN_NODE=1; irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
-```
-
-Descarga las skills, te pregunta dónde las quieres y las copia. **Nada más.** Y si dices que **no** a instalar Node durante la instalación normal, el propio instalador te ofrece este camino.
-
-> [!NOTE]
-> Única diferencia: instala **todas** las skills (en la normal puedes elegir cuáles). El resultado es idéntico, archivo por archivo.
-
----
-
 ## 🆘 Si algo sale mal
 
 | 😕 Lo que ves | 💡 Qué significa y qué hacer |
@@ -339,23 +358,6 @@ Descarga las skills, te pregunta dónde las quieres y las copia. **Nada más.** 
 | La ventana del lanzador se cierra sola | Ábrelo desde la terminal para leer el mensaje: `bash instalar-macos.command`. |
 | macOS dice que no se puede abrir | Es el aviso para archivos de internet. **Clic derecho → Abrir → Abrir**. |
 | Instaló, pero el asistente no cambia | Cierra y vuelve a abrir el asistente. En Cursor, mira **Settings → Rules**. |
-
----
-
-## 📚 Las siete skills
-
-| | Skill | Para qué sirve |
-|:---:|---|---|
-| 🏗️ | `solution-architect` | Te entrevista para entender qué necesitas y produce arquitectura, modelo de datos, pantallas y un plan por fases |
-| 📋 | `project-manager` | Plan de proyecto, cronograma, dependencias, riesgos, métricas y reportes de estado |
-| 🧪 | `prototype-kickoff` | Coordina un equipo de agentes para construir un prototipo completo que funcione |
-| ☕ | `java-developer` | Escribe Java 25 y Spring Boot legible y mantenible |
-| 🐍 | `python-developer` | Escribe Python 3.14, FastAPI y Django con buenas prácticas |
-| ☁️ | `gcp-expert` | Arquitectura, datos, redes y seguridad en Google Cloud |
-| 🟧 | `aws-expert` | Arquitectura, serverless, datos y DevOps en Amazon Web Services |
-
-> [!TIP]
-> Instala solo las que te sirvan. Si no trabajas con Java, no instales `java-developer`.
 
 ---
 
@@ -443,7 +445,6 @@ npx github:bigfito/vibe-coding-skills --check
 ```
 
 ---
-
 <div align="center">
 
 Licencia MIT · Hecho para que tu asistente trabaje como un especialista 🎓
