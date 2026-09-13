@@ -777,6 +777,37 @@ if [ -n "${CASA_REAL:-}" ] && [ -d "$CASA_REAL" ]; then
   fi
 fi
 
+# --------------------------------------- 11. La comprobación previa completa
+
+titulo "11. Comprobación previa (--check)"
+
+CASA_CHK="$(casa_limpia check)"
+PROY_CHK="$TMP/proyecto-check"
+mkdir -p "$PROY_CHK"
+
+salida="$(cd "$PROY_CHK" && HOME="$CASA_CHK" node "$RAIZ/bin/agent-skills.cjs" --check 2>&1)"
+contiene "$salida" "instala skills" "--check explica para qué sirve la aplicación"
+contiene "$salida" "Comprobación del entorno" "--check revisa los requisitos del sistema"
+contiene "$salida" "Asistentes en este computador" "--check revisa también los asistentes"
+contiene "$salida" "Claude Code" "--check nombra cada asistente"
+contiene "$salida" "~/.claude/skills" "--check dice dónde iría la instalación global"
+contiene "$salida" "No encontré ninguno de los cuatro asistentes" "--check avisa si no hay ningún asistente"
+no_contiene "$salida" "Faltan requisitos" "--check no inventa requisitos que sí están"
+[ -z "$(ls -A "$CASA_CHK")" ] && pasa "--check no escribe en la carpeta personal" || falla "--check no escribe en la carpeta personal" "$(ls -A "$CASA_CHK")"
+[ -z "$(ls -A "$PROY_CHK")" ] && pasa "--check no escribe en el proyecto" || falla "--check no escribe en el proyecto"
+
+# Con un asistente presente, lo marca como detectado y no da el aviso.
+mkdir -p "$CASA_CHK/.cursor"
+salida="$(cd "$PROY_CHK" && HOME="$CASA_CHK" node "$RAIZ/bin/agent-skills.cjs" --check 2>&1)"
+contiene "$salida" "detectado" "--check marca el asistente que sí está"
+no_contiene "$salida" "No encontré ninguno" "--check no avisa de más cuando hay un asistente"
+
+# El mismo informe llega por el arranque, que es la vía del usuario sin Node.
+# Con npx de verdad y el paquete local: es el camino que sigue el usuario que
+# arranca con curl | bash sin tener nada instalado.
+salida="$(cd "$PROY_CHK" && HOME="$CASA_CHK" AGENT_SKILLS_REPO="$RAIZ" bash "$RAIZ/install.sh" --check < /dev/null 2>&1)"
+contiene "$salida" "Asistentes en este computador" "install.sh --check llega al mismo informe"
+
 # ------------------------------------------------------------------- resumen
 
 printf '\n'

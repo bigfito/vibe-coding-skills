@@ -17,9 +17,10 @@
 
 var path = require('path');
 
-var pre;
+var pre, entornos;
 try {
   pre = require(path.join(__dirname, '..', 'lib', 'preflight.cjs'));
+  entornos = require(path.join(__dirname, '..', 'lib', 'entornos.cjs'));
 } catch (e) {
   console.error('\n  No se pudo cargar lib/preflight.cjs: ' + e.message);
   console.error('  Reinstala el paquete o clona el repositorio de nuevo.\n');
@@ -40,6 +41,48 @@ function leerOpciones(args) {
   };
 }
 
+// --------------------------------------------------------------- asistentes
+
+/*
+ * La otra mitad de "¿tengo todo lo necesario?": qué asistentes hay en el
+ * computador y en qué carpeta quedarían las skills de cada uno. Se lee de la
+ * misma tabla que usa el instalador, para que no puedan decir cosas distintas.
+ */
+function informarAsistentes() {
+  var claves = Object.keys(entornos.ENTORNOS);
+  var alguno = false;
+
+  console.log('  ' + c.bold('Asistentes en este computador'));
+  for (var i = 0; i < claves.length; i++) {
+    var clave = claves[i];
+    var env = entornos.ENTORNOS[clave];
+    var instalada = entornos.estaInstalada(clave);
+    if (instalada) alguno = true;
+
+    var nombre = env.nombre;
+    while (nombre.length < 32) nombre += ' ';
+    console.log('  ' + nombre + (instalada ? c.verde('detectado') : c.amar('no detectado')));
+
+    // La ruta global se muestra siempre como ~/…, aunque el proyecto esté
+    // dentro de la carpeta personal: si no, las dos líneas parecerían iguales.
+    console.log(c.dim('    global:   ' + rutas(entornos.carpetas(clave, 'global', process.cwd()), null)));
+    console.log(c.dim('    proyecto: ' + rutas(entornos.carpetas(clave, 'proyecto', process.cwd()), process.cwd())));
+  }
+  console.log('');
+  return alguno;
+}
+
+/** Lista legible de las carpetas de destino de una herramienta. */
+function rutas(carpetas, destino) {
+  var salida = [];
+  for (var clave in carpetas) {
+    if (Object.prototype.hasOwnProperty.call(carpetas, clave)) {
+      salida.push(entornos.rutaLegible(carpetas[clave], destino));
+    }
+  }
+  return salida.join(', ');
+}
+
 // ------------------------------------------------------------------ arranque
 
 function main() {
@@ -53,8 +96,14 @@ function main() {
     console.log('  ' + c.bold('agent-skills') + ' instala skills (guías de especialista) para tu asistente de IA.');
     console.log('  ' + c.dim('Esta comprobación solo mira tu sistema: no instala ni cambia nada.'));
     var estado = pre.diagnostico();
+    var hayAsistente = informarAsistentes();
     if (!estado.faltantes.length) {
-      console.log('  ' + c.verde('Todo listo.') + ' Ejecuta el comando sin --check para instalar las skills.');
+      console.log('  ' + c.verde('Tu sistema tiene todo lo necesario.'));
+      if (!hayAsistente) {
+        console.log('  ' + c.amar('No encontré ninguno de los cuatro asistentes en este computador.'));
+        console.log('  ' + c.dim('Puedes instalar las skills igual: quedarán listas para cuando instales uno.'));
+      }
+      console.log('  Ejecuta el comando ' + c.bold('sin') + ' ' + c.verde('--check') + ' para instalar las skills.');
       console.log('');
       return;
     }

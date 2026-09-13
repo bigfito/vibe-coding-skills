@@ -223,6 +223,7 @@ Para funcionar hacen falta cuatro programas: **Node.js 18 o superior**, **npm**,
 | No hay gestor de paquetes conocido | Te dice cómo instalarlo a mano, paso a paso |
 | Tu Linux solo ofrece una versión antigua de Node | Te lo dice y te da los comandos de `nvm` para tener una moderna |
 | No quieres instalar nada en tu computador | Te ofrece el **modo sin Node**: copia las skills y no instala nada |
+| No tienes instalado ninguno de los cuatro asistentes | Te lo dice y te deja seguir: las carpetas quedan listas para cuando instales uno |
 | Se instaló pero la terminal aún no lo ve | Te avisa de que cierres y vuelvas a abrir la terminal |
 
 En todos los casos **comprueba el resultado**: después de instalar verifica que los programas existan de verdad, en lugar de fiarse de que el gestor dijera que fue bien.
@@ -277,7 +278,12 @@ $env:AGENT_SKILLS_CHECK=1; irm https://raw.githubusercontent.com/bigfito/vibe-co
 curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.sh | bash -s -- --check
 ```
 
-Te dice qué tienes, qué te falta y con qué comando lo instalaría, y termina sin tocar nada. Sirve incluso si no tienes Node.js todavía.
+Responde dos cosas y termina sin tocar nada:
+
+1. **Si tu sistema tiene lo necesario** (Node.js, npm, npx y git), y con qué comando instalaría lo que falte.
+2. **Qué asistentes tienes instalados** de los cuatro, y en qué carpeta quedarían las skills de cada uno, tanto globalmente como por proyecto.
+
+Sirve incluso si no tienes Node.js todavía. Si no tienes ningún asistente instalado te lo dice, pero puedes instalar igual: las carpetas quedan listas para cuando instales uno.
 
 ---
 
