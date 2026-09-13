@@ -10,6 +10,7 @@
 #   4. y solo entonces ejecutar el instalador real con npx.
 #
 # Opciones:
+#   --check        solo comprueba el sistema y no instala ni cambia nada
 #   --yes, -y      instala los requisitos que falten sin preguntar
 #   --no-install   nunca instala nada: solo dice qué falta y cómo instalarlo
 # Cualquier otra opción se pasa tal cual al instalador (--all, --envs=…, etc.).
@@ -21,15 +22,27 @@ NODE_MINIMO=18
 
 ASUMIR_SI="${AGENT_SKILLS_ASSUME_YES:-0}"
 SIN_INSTALAR="${AGENT_SKILLS_NO_INSTALL:-0}"
+SOLO_COMPROBAR="${AGENT_SKILLS_CHECK:-0}"
 ARGS_INSTALADOR=()
 
 for arg in "$@"; do
   case "$arg" in
     -y|--yes) ASUMIR_SI=1; ARGS_INSTALADOR+=("$arg") ;;
     --no-install) SIN_INSTALAR=1 ;;
+    # Comprobar es mirar, no tocar: --check nunca instala nada.
+    --check|--doctor) SOLO_COMPROBAR=1; ARGS_INSTALADOR+=("$arg") ;;
     *) ARGS_INSTALADOR+=("$arg") ;;
   esac
 done
+
+# Si la comprobación se pidió por variable de entorno, el instalador también
+# tiene que enterarse: sin esto instalaría las skills en vez de solo mirar.
+if [ "$SOLO_COMPROBAR" = "1" ]; then
+  case " ${ARGS_INSTALADOR[*]+${ARGS_INSTALADOR[*]}} " in
+    *" --check "*|*" --doctor "*) ;;
+    *) ARGS_INSTALADOR+=("--check") ;;
+  esac
+fi
 
 if [ -t 1 ]; then B=$'\033[1m'; D=$'\033[2m'; R=$'\033[31m'; G=$'\033[32m'; Y=$'\033[33m'; N=$'\033[0m'
 else B=""; D=""; R=""; G=""; Y=""; N=""; fi
@@ -254,6 +267,12 @@ if [ "${#FALTANTES[@]}" -gt 0 ]; then
   cmd "$ORDEN_INSTALAR"
   [ -n "$SUDO" ] && printf '  %ssudo puede pedirte la contraseña de tu usuario.%s\n' "$D" "$N"
 
+  if [ "$SOLO_COMPROBAR" = "1" ]; then
+    aviso "  Esto era solo una comprobación: no se instaló nada."
+    printf '  Para que los instale, repite el comando %ssin%s --check.\n\n' "$B" "$N"
+    exit 1
+  fi
+
   if [ "$SIN_INSTALAR" = "1" ]; then
     aviso "  Instalación automática desactivada (--no-install)."
     instrucciones_manuales
@@ -317,7 +336,7 @@ printf '\n  %sTodo listo. Iniciando el instalador…%s\n' "$G" "$N"
 
 # Con `curl … | bash`, stdin es el propio script y el menú no podría leerse.
 # Reconectamos la entrada al terminal real para que el menú funcione igual.
-if [ ! -t 0 ] && [ -r /dev/tty ]; then
+if [ ! -t 0 ] && hay_terminal; then
   exec npx -y "$REPO" ${ARGS_INSTALADOR[@]+"${ARGS_INSTALADOR[@]}"} < /dev/tty
 fi
 exec npx -y "$REPO" ${ARGS_INSTALADOR[@]+"${ARGS_INSTALADOR[@]}"}

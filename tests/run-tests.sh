@@ -180,26 +180,41 @@ exit 0
 STUBEOF
 
 # 3a. Sin instalar: informa y se detiene.
-salida="$(PATH="$STUB" node "$RAIZ/bin/agent-skills.cjs" --check --no-install 2>&1)"
+# Un proyecto de usar y tirar: el camino normal instala requisitos Y skills.
+PROY_REQ="$TMP/proyecto-requisitos"
+mkdir -p "$PROY_REQ"
+sin_git() { PATH="$STUB" "$@"; }
+
+salida="$(cd "$PROY_REQ" && sin_git node "$RAIZ/bin/agent-skills.cjs" --check 2>&1)"
 codigo=$?
 contiene "$salida" "git" "detecta que falta git"
 contiene "$salida" "apt-get install -y git" "muestra la orden exacta que usaría"
-contiene "$salida" "--no-install" "respeta --no-install"
+contiene "$salida" "solo una comprobación" "--check avisa de que no instala nada"
 igual "$codigo" "1" "sale con error cuando falta un requisito"
+[ ! -f "$LOG" ] && pasa "--check no ejecuta el gestor" || falla "--check no ejecuta el gestor" "$(cat "$LOG")"
+
+# Comprobar nunca instala, ni aunque se autorice de antemano con --yes.
+salida="$(cd "$PROY_REQ" && sin_git node "$RAIZ/bin/agent-skills.cjs" --check --yes < /dev/null 2>&1)"
+contiene "$salida" "solo una comprobación" "--check gana sobre --yes"
+[ ! -f "$LOG" ] && pasa "--check --yes sigue sin instalar" || falla "--check --yes sigue sin instalar" "$(cat "$LOG")"
+
+# 3b. Con --no-install: informa, da instrucciones manuales y no toca nada.
+salida="$(cd "$PROY_REQ" && sin_git node "$RAIZ/bin/agent-skills.cjs" --all --envs=claude --no-install < /dev/null 2>&1)"
+contiene "$salida" "--no-install" "respeta --no-install"
+contiene "$salida" "Instálalo a mano" "con --no-install da instrucciones manuales"
 [ ! -f "$LOG" ] && pasa "con --no-install no ejecuta el gestor" || falla "con --no-install no ejecuta el gestor" "$(cat "$LOG")"
 
-# 3b. Sin terminal y sin --yes: no instala nada a espaldas del usuario.
-salida="$(PATH="$STUB" setsid node "$RAIZ/bin/agent-skills.cjs" --check < /dev/null 2>&1)"
+# 3c. Sin terminal y sin --yes: no instala nada a espaldas del usuario.
+salida="$(cd "$PROY_REQ" && PATH="$STUB" setsid node "$RAIZ/bin/agent-skills.cjs" --all --envs=claude < /dev/null 2>&1)"
 contiene "$salida" "No hay terminal interactiva" "sin TTY pide --yes en lugar de instalar"
 [ ! -f "$LOG" ] && pasa "sin TTY no ejecuta el gestor" || falla "sin TTY no ejecuta el gestor" "$(cat "$LOG")"
 
-# 3c. Respuesta "n" en un terminal real: cancela sin instalar.
-# `script` presta un terminal real (pty) al proceso, que es lo que hace falta
-# para ejercitar el diálogo de consentimiento tal como lo ve una persona.
+# 3d. Diálogo real: `script` presta un terminal (pty) al proceso, que es lo que
+# hace falta para ejercitar el consentimiento tal como lo ve una persona.
 en_terminal() {
   local respuesta="$1" transcripcion="$TMP/pty.txt"
   rm -f "$transcripcion"
-  printf '%s' "$respuesta" | script -q -c "env PATH='$STUB' node '$RAIZ/bin/agent-skills.cjs' --check" "$transcripcion" >/dev/null 2>&1
+  printf '%s' "$respuesta" | script -q -c "cd '$PROY_REQ' && env PATH='$STUB' node '$RAIZ/bin/agent-skills.cjs' --skills=java-developer --envs=claude" "$transcripcion" >/dev/null 2>&1
   cat "$transcripcion"
 }
 
@@ -209,29 +224,35 @@ if command -v script >/dev/null 2>&1; then
   contiene "$salida" "Los instalo ahora" "pregunta antes de instalar"
   contiene "$salida" "No se instaló nada" "responder 'n' cancela la instalación"
   [ ! -f "$LOG" ] && pasa "al cancelar no ejecuta el gestor" || falla "al cancelar no ejecuta el gestor" "$(cat "$LOG")"
+  [ ! -d "$PROY_REQ/.claude" ] && pasa "al cancelar tampoco instala skills" || falla "al cancelar tampoco instala skills"
 
-  # 3d. Respuesta vacía (Enter) = sí: instala y vuelve a comprobar.
+  # Enter = sí: instala los requisitos, reverifica y sigue con las skills.
   salida="$(en_terminal '
+
 ')"
   contiene "$salida" "Instalando" "Enter acepta la instalación"
   contiene "$salida" "todos los requisitos están instalados" "reverifica después de instalar"
   [ -f "$LOG" ] && contiene "$(cat "$LOG")" "apt-get install -y git" "ejecutó la instalación del paquete que faltaba" \
                 || falla "ejecutó la instalación del paquete que faltaba" "no se registró ninguna llamada"
+  [ -f "$PROY_REQ/.claude/skills/java-developer/SKILL.md" ] \
+    && pasa "tras instalar los requisitos, instala las skills" || falla "tras instalar los requisitos, instala las skills"
+  rm -rf "$PROY_REQ/.claude"
   rm -f "$STUB/git" "$LOG"
 else
   salta "prueba del diálogo de consentimiento (falta el comando 'script')"
 fi
 
 # 3e. Con --yes instala sin preguntar.
-salida="$(PATH="$STUB" node "$RAIZ/bin/agent-skills.cjs" --check --yes < /dev/null 2>&1)"
+salida="$(cd "$PROY_REQ" && sin_git node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=claude --yes < /dev/null 2>&1)"
 contiene "$salida" "Instalando" "--yes instala sin preguntar"
 contiene "$salida" "todos los requisitos están instalados" "--yes deja el entorno completo"
 [ -f "$LOG" ] && contiene "$(cat "$LOG")" "apt-get update" "refresca el índice antes de instalar" \
               || falla "refresca el índice antes de instalar" "no se registró ninguna llamada"
+rm -rf "$PROY_REQ/.claude"
 rm -f "$STUB/git" "$LOG"
 
 # 3f. Simulación: muestra el plan pero no toca nada.
-salida="$(PATH="$STUB" node "$RAIZ/bin/agent-skills.cjs" --check --dry-run < /dev/null 2>&1)"
+salida="$(cd "$PROY_REQ" && sin_git node "$RAIZ/bin/agent-skills.cjs" --all --dry-run < /dev/null 2>&1)"
 contiene "$salida" "Modo simulación" "--dry-run no instala"
 [ ! -f "$LOG" ] && pasa "--dry-run no ejecuta el gestor" || falla "--dry-run no ejecuta el gestor" "$(cat "$LOG")"
 
@@ -239,7 +260,7 @@ contiene "$salida" "Modo simulación" "--dry-run no instala"
 SOLO_NODE="$TMP/solo-node"
 mkdir -p "$SOLO_NODE"
 for real in node npm npx; do ln -sf "$(command -v "$real")" "$SOLO_NODE/$real"; done
-salida="$(PATH="$SOLO_NODE" node "$RAIZ/bin/agent-skills.cjs" --check --yes < /dev/null 2>&1)"
+salida="$(cd "$PROY_REQ" && PATH="$SOLO_NODE" node "$RAIZ/bin/agent-skills.cjs" --all --envs=claude --yes < /dev/null 2>&1)"
 contiene "$salida" "gestor de paquetes" "sin gestor, lo dice claramente"
 contiene "$salida" "Instálalo a mano" "sin gestor, da instrucciones manuales"
 
@@ -315,6 +336,21 @@ contiene "$salida" "Todo listo" "install.sh llega al instalador"
                   || falla "install.sh pasa los argumentos a npx" "npx no se ejecutó"
 rm -f "$STUB/git" "$LOG" "$NPX_LOG"
 
+# La comprobación por variable de entorno (la forma que funciona con `irm | iex`)
+# tiene que llegar hasta el instalador como --check, no como una instalación.
+rm -f "$NPX_LOG"
+printf '#!/usr/bin/env bash\necho "git version 2.99.0"\n' | crear_stub "$STUB/git"
+salida="$(PATH="$STUB" AGENT_SKILLS_CHECK=1 bash "$RAIZ/install.sh" < /dev/null 2>&1)"
+[ -f "$NPX_LOG" ] && contiene "$(cat "$NPX_LOG")" "--check" "AGENT_SKILLS_CHECK reenvía --check al instalador" \
+                  || falla "AGENT_SKILLS_CHECK reenvía --check al instalador" "npx no se ejecutó"
+no_contiene "$salida" "No such device" "install.sh no falla al reconectar el terminal"
+rm -f "$STUB/git" "$NPX_LOG"
+
+salida="$(PATH="$STUB" bash "$RAIZ/install.sh" --check --yes < /dev/null 2>&1)"
+contiene "$salida" "solo una comprobación" "install.sh con --check no instala nada"
+[ ! -f "$LOG" ] && pasa "install.sh con --check no ejecuta el gestor" || falla "install.sh con --check no ejecuta el gestor" "$(cat "$LOG")"
+[ ! -f "$NPX_LOG" ] && pasa "install.sh con --check no arranca el instalador" || falla "install.sh con --check no arranca el instalador"
+
 salida="$(PATH="$STUB" bash "$RAIZ/install.sh" --no-install < /dev/null 2>&1)"
 contiene "$salida" "Instalación automática desactivada" "install.sh respeta --no-install"
 [ ! -f "$NPX_LOG" ] && pasa "install.sh no arranca el instalador si falta algo" \
@@ -376,6 +412,17 @@ STUBEOF
   [ -f "$PS_NPX_LOG" ] && contiene "$(cat "$PS_NPX_LOG")" "--all --yes" "install.ps1 pasa los argumentos a npx" \
                        || falla "install.ps1 pasa los argumentos a npx" "npx no se ejecutó"
   rm -f "$PS_STUB/git" "$PS_LOG" "$PS_NPX_LOG"
+
+  rm -f "$PS_NPX_LOG"
+  printf '#!/usr/bin/env bash\necho "git version 2.99.0"\n' | crear_stub "$PS_STUB/git"
+  salida="$(PATH="$PS_STUB" AGENT_SKILLS_CHECK=1 "$PWSH" -NoProfile -File "$RAIZ/install.ps1" < /dev/null 2>&1)"
+  [ -f "$PS_NPX_LOG" ] && contiene "$(cat "$PS_NPX_LOG")" "--check" "install.ps1 reenvía --check con AGENT_SKILLS_CHECK" \
+                       || falla "install.ps1 reenvía --check con AGENT_SKILLS_CHECK" "npx no se ejecutó"
+  rm -f "$PS_STUB/git" "$PS_NPX_LOG"
+
+  salida="$(PATH="$PS_STUB" "$PWSH" -NoProfile -File "$RAIZ/install.ps1" --check --yes < /dev/null 2>&1)"
+  contiene "$salida" "solo una comprobacion" "install.ps1 con --check no instala nada"
+  [ ! -f "$PS_LOG" ] && pasa "install.ps1 con --check no ejecuta winget" || falla "install.ps1 con --check no ejecuta winget"
 
   salida="$(PATH="$PS_STUB" "$PWSH" -NoProfile -File "$RAIZ/install.ps1" --no-install < /dev/null 2>&1)"
   contiene "$salida" "desactivada" "install.ps1 respeta --no-install"

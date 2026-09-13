@@ -46,18 +46,20 @@ function main() {
   var args = process.argv.slice(2);
   var o = leerOpciones(args);
 
-  // Modo diagnóstico: informa y, si falta algo, ofrece instalarlo.
+  // Modo diagnóstico: dice qué hay, qué falta y qué haría para arreglarlo,
+  // pero no toca el sistema. Comprobar nunca instala.
   if (o.check) {
+    console.log('');
+    console.log('  ' + c.bold('agent-skills') + ' instala skills (guías de especialista) para tu asistente de IA.');
+    console.log('  ' + c.dim('Esta comprobación solo mira tu sistema: no instala ni cambia nada.'));
     var estado = pre.diagnostico();
     if (!estado.faltantes.length) {
       console.log('  ' + c.verde('Todo listo.') + ' Ejecuta el comando sin --check para instalar las skills.');
       console.log('');
       return;
     }
-    if (!pre.asegurarRequisitos({ yes: o.yes, noInstalar: o.noInstalar, dryRun: o.dryRun, silencioso: true })) {
-      process.exit(1);
-    }
-    return;
+    pre.asegurarRequisitos({ soloComprobar: true, silencioso: true });
+    process.exit(1);
   }
 
   // La ayuda no necesita entorno completo: siempre se puede leer.

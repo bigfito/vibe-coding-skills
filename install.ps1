@@ -10,6 +10,9 @@
     4. y solo entonces ejecutar el instalador real con npx.
 
   Opciones:
+    --check        solo comprueba el sistema y no instala ni cambia nada
+                   (con `irm ... | iex`, que no admite argumentos, usa en su
+                    lugar la variable de entorno AGENT_SKILLS_CHECK=1)
     -y, --yes      instala los requisitos que falten sin preguntar
     --no-install   nunca instala nada: solo dice qué falta y cómo instalarlo
   Cualquier otra opción se pasa tal cual al instalador (--all, --envs=..., etc.).
@@ -21,13 +24,22 @@ $Repo = if ($env:AGENT_SKILLS_REPO) { $env:AGENT_SKILLS_REPO } else { 'github:bi
 
 $AsumirSi = ($env:AGENT_SKILLS_ASSUME_YES -eq '1')
 $SinInstalar = ($env:AGENT_SKILLS_NO_INSTALL -eq '1')
+$SoloComprobar = ($env:AGENT_SKILLS_CHECK -eq '1')
 $ArgsInstalador = @()
 foreach ($a in $args) {
     switch -Regex ($a) {
-        '^(-y|--yes)$'    { $AsumirSi = $true; $ArgsInstalador += $a }
-        '^--no-install$'  { $SinInstalar = $true }
-        default           { $ArgsInstalador += $a }
+        '^(-y|--yes)$'      { $AsumirSi = $true; $ArgsInstalador += $a }
+        '^--no-install$'    { $SinInstalar = $true }
+        # Comprobar es mirar, no tocar: --check nunca instala nada.
+        '^(--check|--doctor)$' { $SoloComprobar = $true; $ArgsInstalador += $a }
+        default             { $ArgsInstalador += $a }
     }
+}
+
+# Si la comprobacion se pidio por variable de entorno, el instalador tambien
+# tiene que enterarse: sin esto instalaria las skills en vez de solo mirar.
+if ($SoloComprobar -and -not ($ArgsInstalador -contains '--check') -and -not ($ArgsInstalador -contains '--doctor')) {
+    $ArgsInstalador += '--check'
 }
 
 function Escribe-Titulo($t) { Write-Host "`n$t" -ForegroundColor White }
@@ -164,6 +176,12 @@ if ($estado.Faltantes.Count -gt 0) {
 
     Write-Host "`n  Puedo instalarlos con $($Gestor.Nombre):"
     foreach ($o in $ordenes) { Escribe-Cmd "$($Gestor.Bin) $($o -join ' ')" }
+
+    if ($SoloComprobar) {
+        Escribe-Aviso "  Esto era solo una comprobacion: no se instalo nada."
+        Write-Host "  Para que los instale, repite el comando sin --check.`n"
+        exit 1
+    }
 
     if ($SinInstalar) {
         Escribe-Aviso "  Instalacion automatica desactivada (--no-install)."

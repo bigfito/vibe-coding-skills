@@ -129,6 +129,27 @@ Eso es todo. Abre tu asistente y pídele algo relacionado: por ejemplo, *"quiero
 
 ---
 
+# Qué necesita tu computador (y qué hace el instalador con eso)
+
+Para funcionar hacen falta cuatro programas: **Node.js 18 o superior**, **npm**, **npx** y **git**. No tienes que instalarlos tú.
+
+| Situación | Qué hace el instalador |
+|-----------|------------------------|
+| No te falta nada | Sigue de largo y te muestra el menú |
+| Te falta algo y hay gestor de paquetes | Te enseña la orden exacta, te pide permiso y lo instala |
+| Dices que no | No toca nada y te deja las instrucciones para hacerlo a mano |
+| Nadie puede responder (script automático) | Se detiene: nunca instala sin autorización |
+| Tu sistema pide contraseña de administrador | Te la pide la propia orden `sudo`, no el instalador |
+| No hay gestor de paquetes conocido | Te dice cómo instalarlo a mano, paso a paso |
+| Tu Linux solo ofrece una versión antigua de Node | Te lo dice y te da los comandos de `nvm` para tener una moderna |
+| Se instaló pero la terminal aún no lo ve | Te avisa de que cierres y vuelvas a abrir la terminal |
+
+En todos los casos **comprueba el resultado**: después de instalar verifica que los programas existan de verdad, en lugar de fiarse de que el gestor dijera que fue bien.
+
+Lo que el instalador **no** hace: no cambia versiones que ya tengas funcionando, no instala nada fuera de esa lista de cuatro programas, no modifica tu sistema si respondes que no, y no toca nada fuera de la carpeta del proyecto cuando copia las skills.
+
+---
+
 # Si algo sale mal
 
 | Lo que ves | Qué significa y qué hacer |
@@ -143,13 +164,21 @@ Eso es todo. Abre tu asistente y pídele algo relacionado: por ejemplo, *"quiero
 | No pasa nada al pegar | Puede que no se pegara el texto. Prueba con clic derecho (Windows) o **⌘ + V** (macOS). |
 | Instaló, pero el asistente no cambia | Cierra y vuelve a abrir el asistente. En Cursor, comprueba **Settings → Rules**. |
 
-**Para revisar tu computador sin instalar nada**, ejecuta:
+**Para revisar tu computador sin instalar ni cambiar nada**, usa esta línea:
 
-```
-npx github:bigfito/vibe-coding-skills --check
+**En Windows (PowerShell)**
+
+```powershell
+$env:AGENT_SKILLS_CHECK=1; irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
 ```
 
-Te dirá qué tienes y qué te falta.
+**En macOS o Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.sh | bash -s -- --check
+```
+
+Te dice qué tienes, qué te falta y con qué comando lo instalaría, y termina sin tocar nada. Sirve incluso si no tienes Node.js todavía.
 
 ---
 
@@ -212,11 +241,11 @@ npx github:bigfito/vibe-coding-skills --all --dry-run      # simula, no escribe 
 | `--yes`, `-y` | Sin pedir confirmación |
 | `--force` | Sobrescribe lo ya instalado |
 | `--dry-run` | Muestra qué haría, sin tocar nada |
-| `--check` | Solo diagnostica el entorno (y ofrece instalar lo que falte) |
+| `--check` | Solo diagnostica el entorno: no instala ni cambia nada |
 | `--no-install` | Nunca instala requisitos: solo dice qué falta y cómo instalarlo |
 | `--help` | Ayuda |
 
-También se pueden fijar por variable de entorno: `AGENT_SKILLS_ASSUME_YES=1` equivale a `--yes` y `AGENT_SKILLS_NO_INSTALL=1` a `--no-install`.
+También se pueden fijar por variable de entorno: `AGENT_SKILLS_ASSUME_YES=1` equivale a `--yes`, `AGENT_SKILLS_NO_INSTALL=1` a `--no-install` y `AGENT_SKILLS_CHECK=1` a `--check` (útil en PowerShell, donde `irm … | iex` no admite argumentos).
 
 **Instalación manual:** cada skill tiene su propio `INSTALL.md` dentro de `skills/`, con los cuatro caminos explicados, y un archivo `.skill` que se instala directamente en Claude.ai o Cowork.
 
