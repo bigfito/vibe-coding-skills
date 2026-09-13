@@ -26,7 +26,12 @@
     "ai-agents"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bigfito/vibe-coding-skills.git"
+  },
   "scripts": {
-    "check": "node bin/agent-skills.cjs --check"
+    "check": "node bin/agent-skills.cjs --check",
+    "test": "bash tests/run-tests.sh"
   }
 }

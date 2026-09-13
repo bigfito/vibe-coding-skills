@@ -10,7 +10,7 @@ No tienes que escribir nada especial ni recordar ningún comando: una vez instal
 
 Funcionan en cuatro herramientas: **Claude Code**, **Cursor**, **IntelliJ IDEA Ultimate (Junie)** y **Google Antigravity**. Puedes instalarlas en una o en todas.
 
-> **Nota:** donde este documento dice `<usuario>`, escribe el nombre de usuario de GitHub donde está publicado este repositorio.
+El instalador se encarga solo de los requisitos: detecta tu sistema operativo, comprueba si tienes lo necesario y, si te falta algo, **te pide permiso y lo instala por ti**.
 
 ---
 
@@ -58,18 +58,41 @@ Copia la línea que corresponda a tu sistema, pégala en la terminal y pulsa **E
 **En Windows (PowerShell)**
 
 ```powershell
-irm https://raw.githubusercontent.com/<usuario>/agent-skills/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
 ```
 
 **En macOS o Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<usuario>/agent-skills/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.sh | bash
 ```
 
 *Para pegar en la terminal:* en Windows haz clic derecho; en macOS usa **⌘ + V**; en Linux usa **Ctrl + Shift + V**.
 
-El instalador revisará primero que tu computador tenga lo necesario. Si falta algo, **te dirá exactamente qué instalar y con qué comando**, y se detendrá sin hacer nada más. Instala lo que te indique y vuelve a ejecutar la misma línea.
+El instalador revisa primero que tu computador tenga lo necesario: **Node.js 18 o superior, npm, npx y git**.
+
+Si falta algo, detecta tu sistema y tu gestor de paquetes (Homebrew en macOS; APT, DNF, pacman, apk o zypper en Linux; winget, Chocolatey o Scoop en Windows), te muestra la orden exacta que ejecutaría y te pregunta:
+
+```
+  Faltan requisitos para poder continuar:
+   • git: no está instalado  — npx lo necesita para descargar el paquete desde GitHub
+
+  Puedo instalarlos con APT:
+      sudo apt-get update
+      sudo apt-get install -y git
+
+  ¿Los instalo ahora? [S/n]
+```
+
+Pulsa **Enter** y los instala. Responde `n` y no toca nada: te deja las instrucciones para hacerlo a mano.
+
+Tres cosas que conviene saber:
+
+- **Nunca instala nada sin tu permiso.** Si no hay nadie para responder (por ejemplo, dentro de un script automático), se detiene y te lo dice, en lugar de decidir por ti.
+- **En Linux y macOS puede pedirte tu contraseña**, porque instalar paquetes del sistema requiere permisos de administrador (`sudo`). Homebrew es la excepción y nunca se ejecuta con `sudo`.
+- **Comprueba el resultado**: después de instalar vuelve a verificar que los comandos existan de verdad. Si tu sistema no los expone hasta reabrir la terminal, te lo advierte.
+
+Si prefieres que no instale nada automáticamente, añade `--no-install`. Si quieres autorizarlo de antemano (por ejemplo, en un script), añade `--yes`.
 
 ## Paso 4. Elige qué instalar
 
@@ -110,18 +133,20 @@ Eso es todo. Abre tu asistente y pídele algo relacionado: por ejemplo, *"quiero
 
 | Lo que ves | Qué significa y qué hacer |
 |------------|---------------------------|
-| `No se encontró Node.js` | Falta un programa necesario. El propio mensaje incluye el comando para instalarlo en tu sistema. Instálalo, **cierra y vuelve a abrir la terminal**, y repite el paso 3. |
+| `Faltan requisitos para poder continuar` | Es normal la primera vez. Responde `s` (o pulsa Enter) y el instalador los instala por ti. |
+| `No hay terminal interactiva` (al pedir permiso) | Nadie puede responder la pregunta. Repite el comando añadiendo `--yes` para autorizar la instalación de antemano. |
+| `Se instaló, pero todavía falta…` | El paquete se instaló, pero tu terminal aún no lo ve. **Ciérrala y vuelve a abrirla**, y repite el paso 3. |
+| `Hace falta sudo…` | Tu usuario no puede instalar paquetes del sistema. Pide ayuda a quien administre el equipo, o usa `nvm` (el mensaje incluye los comandos). |
 | `curl: command not found` (Windows) | Estás usando el comando de macOS. Usa la línea de PowerShell del paso 3. |
 | `No hay terminal interactiva disponible` | El menú no puede abrirse. Añade `--all --yes` al final del comando para instalar todo sin menú. |
 | `ya existían y no se tocaron` | Ya habías instalado esas skills. Si quieres reemplazarlas por la versión nueva, repite el comando añadiendo `--force` al final. |
-| `no se encontró git` | Falta git. El mensaje te da el comando para instalarlo. |
 | No pasa nada al pegar | Puede que no se pegara el texto. Prueba con clic derecho (Windows) o **⌘ + V** (macOS). |
 | Instaló, pero el asistente no cambia | Cierra y vuelve a abrir el asistente. En Cursor, comprueba **Settings → Rules**. |
 
 **Para revisar tu computador sin instalar nada**, ejecuta:
 
 ```
-npx github:<usuario>/agent-skills --check
+npx github:bigfito/vibe-coding-skills --check
 ```
 
 Te dirá qué tienes y qué te falta.
@@ -174,9 +199,9 @@ Dos detalles: en Antigravity las guías largas se instalan partidas en varios ar
 Si prefieres saltarte el menú, o automatizarlo:
 
 ```bash
-npx github:<usuario>/agent-skills --all --envs=claude,cursor --yes
-npx github:<usuario>/agent-skills --skills=gcp-expert,project-manager --envs=claude --yes
-npx github:<usuario>/agent-skills --all --dry-run      # simula, no escribe nada
+npx github:bigfito/vibe-coding-skills --all --envs=claude,cursor --yes
+npx github:bigfito/vibe-coding-skills --skills=gcp-expert,project-manager --envs=claude --yes
+npx github:bigfito/vibe-coding-skills --all --dry-run      # simula, no escribe nada
 ```
 
 | Opción | Efecto |
@@ -187,39 +212,35 @@ npx github:<usuario>/agent-skills --all --dry-run      # simula, no escribe nada
 | `--yes`, `-y` | Sin pedir confirmación |
 | `--force` | Sobrescribe lo ya instalado |
 | `--dry-run` | Muestra qué haría, sin tocar nada |
-| `--check` | Solo diagnostica el entorno |
+| `--check` | Solo diagnostica el entorno (y ofrece instalar lo que falte) |
+| `--no-install` | Nunca instala requisitos: solo dice qué falta y cómo instalarlo |
 | `--help` | Ayuda |
+
+También se pueden fijar por variable de entorno: `AGENT_SKILLS_ASSUME_YES=1` equivale a `--yes` y `AGENT_SKILLS_NO_INSTALL=1` a `--no-install`.
 
 **Instalación manual:** cada skill tiene su propio `INSTALL.md` dentro de `skills/`, con los cuatro caminos explicados, y un archivo `.skill` que se instala directamente en Claude.ai o Cowork.
 
-**Requisitos técnicos:** Node.js 18 o superior, npx (incluido con npm) y git. El instalador no usa dependencias externas, solo módulos nativos de Node.
+**Requisitos técnicos:** Node.js 18 o superior, npm, npx y git. No hace falta instalarlos a mano: el instalador los detecta y, con tu permiso, los instala. No usa dependencias externas, solo módulos nativos de Node.
+
+**Gestores de paquetes que reconoce:** Homebrew (macOS), APT, DNF/YUM, pacman, apk y zypper (Linux y WSL), y winget, Chocolatey y Scoop (Windows).
 
 ---
 
 # Para el dueño del repositorio
 
-Antes de publicar, reemplaza `<usuario>` por tu nombre de usuario de GitHub en cuatro archivos:
+**Pruebas:** el repositorio trae una batería de pruebas de extremo a extremo que no toca el sistema (usa gestores de paquetes simulados en carpetas temporales):
 
 ```bash
-grep -rl '<usuario>' . --exclude-dir=.git
-# README.md, install.sh, install.ps1, bin/agent-skills.cjs
+npm test          # o: bash tests/run-tests.sh
 ```
 
-Publicación:
+Cubren la sintaxis de los tres puntos de entrada, la detección de sistema y gestor, el diálogo de consentimiento (incluido que cancelar no instale nada), la instalación y reverificación, y la copia de skills en los cuatro entornos. Las pruebas de `install.ps1` se ejecutan si hay PowerShell instalado, y se saltan si no.
+
+**Comprobación rápida del entorno**, desde cualquier carpeta:
 
 ```bash
-gh repo create agent-skills --public --source=. --remote=origin
-git add . && git commit -m "Suite de skills de agente"
-git push -u origin main
+npx github:bigfito/vibe-coding-skills --check
 ```
-
-Prueba de humo, desde cualquier carpeta:
-
-```bash
-npx github:<usuario>/agent-skills --check
-```
-
-Si imprime el diagnóstico del entorno, el paquete quedó bien publicado.
 
 ---
 
