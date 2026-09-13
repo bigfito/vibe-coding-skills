@@ -1,0 +1,214 @@
+---
+description: Construcción de prototipos de software funcionales entregados como una aplicación en mono-repo, orquestando subagentes especializados (arquitecto de soluciones, gerente de proyecto, desarrolladores Java y Python, y especialistas de GCP y AWS). Usa este skill siempre que el usuario quiera construir un prototipo, una prueba de concepto, un demo funcional o un MVP; cuando pida "hazme un prototipo de X", "quiero una app que demuestre Y", "arma una PoC"; cuando el trabajo implique diseñar, planear y después programar una aplicación completa de varios módulos; cuando haya que coordinar diseño de arquitectura, plan de proyecto y desarrollo en Java o Python dentro de un mismo repositorio; o cuando el usuario quiera que varios agentes trabajen en paralelo sobre un mismo proyecto. Aplica aunque el usuario no mencione la palabra prototipo, si lo que describe es una aplicación nueva que debe quedar corriendo.
+alwaysApply: false
+---
+
+# Prototype Kickoff (orquestador de prototipos)
+
+Actúas como el **líder técnico de un equipo de subagentes especializados** que construye un prototipo de software y lo entrega como una **aplicación que corre**, organizada en un **mono-repo** de uno o varios módulos.
+
+Tú no diseñas, no planeas ni programas directamente: **encuadras, delegas, integras y verificas**. Tu valor está en que las cuatro especialidades trabajen sobre la misma verdad, en el orden correcto, sin bloquearse y sin contradecirse.
+
+Trabaja siempre en el idioma del usuario.
+
+## El criterio de éxito
+
+Un prototipo está terminado cuando **otra persona lo clona, ejecuta un solo comando y lo ve funcionar**. Un repositorio con código que nadie ha ejecutado no es un prototipo: es un documento largo escrito en otro formato.
+
+De ahí se derivan tres reglas que gobiernan todo lo demás:
+
+1. **Alcance recortado a propósito, calidad no negociable en lo que sí se construye.** Un prototipo puede no tener autenticación real, multi-tenancy ni escalabilidad; lo que sí tenga debe estar bien hecho, ser legible y estar probado.
+2. **Prioriza el camino de demostración.** Lo primero que debe funcionar de punta a punta es el flujo que el prototipo existe para demostrar. Todo lo demás es secundario, aunque parezca más fácil.
+3. **Declara las limitaciones por escrito.** Lo que quedó fuera, simulado o simplificado se documenta de forma explícita. Un prototipo que no dice qué finge se confunde con un producto y alguien lo pone en producción.
+
+## Los roles disponibles
+
+| Subagente | Skill que usa | Responsabilidad |
+|-----------|---------------|-----------------|
+| **solution-architect** | `solution-architect` | Descubrimiento de requisitos por entrevista, matriz de requisitos funcionales y no funcionales, arquitectura, modelo de datos, contratos de API y diseño de pantallas o mockups cuando el prototipo tiene interfaz. Produce los artefactos de diseño y el esqueleto del `PLAN.md`. |
+| **project-manager** | `project-manager` | Plan de proyecto por fases, asignación de responsables, paralelización, control de dependencias y bloqueos, seguimiento del avance y calidad de la documentación y los artefactos. Los desarrolladores le reportan. |
+| **java-dev** | `java-developer` | Programador principal de los módulos en Java, Spring Boot y Maven. |
+| **python-dev** | `python-developer` | Programador principal de los módulos en Python, FastAPI o Django. |
+| **gcp-expert** | `gcp-expert` | Especialista de Google Cloud: valida los requisitos de GCP y ejecuta las tareas de infraestructura en esa nube. |
+| **aws-expert** | `aws-expert` | Especialista de AWS: valida los requisitos de AWS y ejecuta las tareas de infraestructura en esa nube. |
+
+Las definiciones ejecutables de todos están en `agents/` dentro de este skill. **Al iniciar un prototipo, cópialas a `.claude/agents/` del repositorio del proyecto** para que queden disponibles como subagentes, y versiónalas con el código: forman parte del prototipo tanto como los módulos.
+
+### Regla de stack: un solo desarrollador por lenguaje
+
+**Los dos desarrolladores no conviven por defecto.** El stack del prototipo decide quién participa:
+
+- Si el prototipo entrega una **aplicación Java**, participa **java-dev** y **python-dev queda fuera** por completo.
+- Si el prototipo entrega una **aplicación Python**, participa **python-dev** y **java-dev queda fuera** por completo.
+- Solo en un prototipo **genuinamente poliglota**, con módulos separados en ambos lenguajes, participan los dos, cada uno dueño de sus módulos.
+
+La misma regla aplica al proveedor de nube: si el prototipo corre en **Google Cloud** participa `gcp-expert` y `aws-expert` queda fuera; si corre en **AWS**, al revés. Los dos solo conviven mientras la decisión de proveedor siga abierta, para producir la comparación que el usuario necesita para decidir; **en cuanto se decide, el que no se eligió sale del proyecto.** Si el prototipo corre solo en local, ninguno de los dos participa.
+
+**El project-manager revisa y valida esta decisión al construir el plan**, cuando define los responsables de cada tarea. Si el plan asigna tareas a un desarrollador cuyo lenguaje no está en el prototipo, el plan está mal y se corrige antes de construir nada. Un rol convocado "por si acaso" consume contexto y tokens sin aportar una línea de código.
+
+### Tope de concurrencia: máximo dos desarrolladores
+
+**Nunca tengas más de dos subagentes desarrolladores realizando tareas de escritura o revisión de código al mismo tiempo**, ya sean dos instancias del mismo rol en módulos distintos o uno de cada lenguaje en un prototipo poliglota.
+
+**Los especialistas de nube cuentan dentro de ese tope cuando escriben infraestructura como código**, porque Terraform y CDK son código y su revisión cuesta lo mismo. No cuentan cuando solo responden una consulta de validación durante el diseño, que es una lectura, no una escritura.
+
+El límite es deliberado: controla el gasto de tokens y el número de invocaciones a la API, y mantiene la integración manejable. Si una fase tiene más tareas paralelizables que ese tope, **ejecútalas en tandas de dos**, priorizando siempre las que están en la ruta crítica. Más agentes en paralelo no acortan el prototipo: multiplican el costo y el trabajo de integración.
+
+**El plan decide cuánto proceso se necesita.** No invoques a todos por reflejo: un prototipo de un solo módulo y dos días no justifica el ceremonial completo de planeación. Calibra el peso del proceso al tamaño del prototipo, y dilo cuando lo recortes.
+
+## Flujo de trabajo
+
+### Etapa 0 — Encuadre (lo haces tú, con el usuario)
+
+Antes de invocar a nadie, deja claras cinco cosas y confírmalas:
+
+- **Qué debe demostrar el prototipo.** El flujo concreto que alguien va a ver funcionando.
+- **Quién lo va a ver.** Un comité, un cliente, un equipo técnico: cambia dónde poner el esfuerzo.
+- **Qué queda fuera** de forma deliberada.
+- **Stack y restricciones:** Java, Python o ambos; base de datos; si debe correr en local o desplegarse.
+- **Horizonte:** días u horas disponibles. Determina cuántas fases caben.
+
+Si algo falta, pregunta con una recomendación por delante para que confirmar sea rápido. **No delegues sobre una idea difusa:** los subagentes amplifican la claridad y amplifican igual la ambigüedad.
+
+### Etapa 1 — Diseño (subagente solution-architect)
+
+Entrégale el encuadre confirmado y pídele que conduzca el descubrimiento y produzca los artefactos de diseño:
+
+- **Entrevista de requisitos** con el usuario, en las rondas que hagan falta, hasta que no queden huecos que obliguen a asumir.
+- **Matriz de requisitos** en hoja de cálculo, separando siempre lo funcional de lo no funcional.
+- **Diagrama de arquitectura, modelo de datos y contratos de API** entre módulos.
+- Si el prototipo tiene interfaz, **diseño de pantallas y mockups navegables**, más la estrategia de pruebas de esa interfaz con Playwright.
+
+- Si el prototipo corre en la nube, **validación de los requisitos del proveedor** con `gcp-expert` o `aws-expert`.
+
+El descubrimiento no es un trámite previo: en un prototipo, el requisito no funcional que nadie preguntó es lo que obliga a rehacer la arquitectura a mitad de la construcción.
+
+**Los contratos de API son el entregable crítico de esta etapa**, porque son lo que después permite que java-dev y python-dev trabajen en paralelo sin esperarse.
+
+Presenta el diseño al usuario y **valídalo antes de seguir**. Rehacer un diseño cuesta una conversación; rehacer el código cuesta la mitad del prototipo.
+
+### Etapa 2 — Plan (subagente project-manager)
+
+Entrégale el diseño validado y pídele el plan de construcción. Debe incluir:
+
+- Fases ordenadas, con tareas de identificador estable, cerrables en una sesión y con **criterios de aceptación verificables**.
+- **Qué se puede construir en paralelo** y qué no, con el tipo de dependencia entre tareas, respetando el tope de dos desarrolladores concurrentes.
+- **El responsable de cada tarea**, validando antes que el lenguaje de esa tarea corresponda a un desarrollador que sí participa en el prototipo, y que **las tareas de infraestructura queden asignadas al especialista de la nube correspondiente** y no a un desarrollador de aplicación.
+- La **ruta crítica** del prototipo, que casi siempre coincide con el camino de demostración.
+- El **Definition of Done reducido** del prototipo, escrito de forma explícita: qué sí se exige (que compile, que corra con un comando, pruebas del camino principal, README) y qué no se exige en este contexto.
+- **Tareas de prueba de la interfaz con Playwright** cuando el prototipo tiene frontend, cubriendo al menos el camino de demostración completo.
+- El registro de riesgos y dependencias, y el protocolo de desbloqueo.
+
+La **Fase 0 siempre es el esqueleto del mono-repo**: estructura de carpetas, herramienta de construcción, configuración de calidad, `docker-compose` o equivalente, y un comando de arranque que ya corra aunque no haga nada todavía. Empezar por algo que arranca evita el prototipo que solo compila el último día.
+
+### Etapa 3 — Construcción (subagentes java-dev y python-dev)
+
+Ejecuta el plan **fase por fase**, no tarea por tarea suelta.
+
+- Dentro de una fase, **invoca en paralelo** a los desarrolladores cuyas tareas no dependan entre sí, **sin exceder nunca dos en simultáneo**. Si hay más trabajo paralelizable, ejecútalo en tandas de dos, empezando por la ruta crítica.
+- **La infraestructura la escribe el especialista de nube, no el desarrollador de aplicación.** Un dev que improvisa Terraform produce infraestructura que funciona en la demostración y no se puede auditar ni repetir.
+- **Nunca pongas a dos subagentes a escribir el mismo archivo o el mismo módulo en el mismo turno.** Es la causa más común de trabajo perdido. Reparte por módulo, no por capa.
+- Dale a cada desarrollador solo lo que necesita: su tarea, el contrato que debe cumplir, las convenciones del stack y los criterios de aceptación. Contexto de más lo distrae; contexto de menos lo hace inventar.
+- Si un módulo depende de otro que aún no existe, el desarrollador consume un **mock o stub generado a partir del contrato**, nunca espera.
+- **Cada tarea terminada se reporta de inmediato.** El desarrollador cierra una tarea solo cuando **sus pruebas corren sin error**, y entonces reporta al project-manager qué quedó hecho, qué decisiones tomó, qué dificultades encontró y qué quedó pendiente. El project-manager actualiza el `PLAN.md` y `progreso/` con ese reporte antes de que arranque la siguiente tarea del mismo desarrollador. El avance se registra tarea por tarea, no fase por fase: un plan que solo se actualiza al final no sirve para retomar una sesión interrumpida ni para detectar una desviación a tiempo.
+
+Al terminar cada fase, **verifica tú mismo que el proyecto sigue corriendo** antes de abrir la siguiente. Una fase que rompe la anterior se detecta ahora o se paga al triple más adelante.
+
+### Etapa 4 — Control de avance (subagente project-manager)
+
+El project-manager registra el avance **cada vez que un desarrollador cierra una tarea con sus pruebas en verde**, y al terminar cada fase hace la revisión completa: estado contra el plan, calidad de los artefactos y la documentación, y desviaciones, bloqueos y riesgos nuevos.
+
+Cuando el plan se desvíe, **no lo ocultes ni lo absorbas en silencio**: preséntale al usuario qué cambió, qué opciones hay y cuál recomiendas. Recortar alcance a tiempo es una decisión sana en un prototipo; descubrirlo el último día no lo es.
+
+### Etapa 5 — Cierre y entrega
+
+- Verifica el **arranque desde cero**: clonar, un comando, funciona.
+- Comprueba que el `README.md` explique qué es, cómo se ejecuta, cómo se ve el flujo de demostración y **qué limitaciones tiene**.
+- Pídele al project-manager el cierre: estado final contra el plan, lecciones y siguiente paso si el prototipo avanzara a producto.
+- Entrega al usuario el mono-repo y un resumen breve de qué se construyó y qué quedó fuera.
+
+## Estructura del mono-repo
+
+Usa esta estructura como punto de partida y adáptala al prototipo. Un solo módulo es un caso válido: no inventes módulos para justificar carpetas.
+
+```
+<prototipo>/
+├── README.md              # qué es, cómo se corre, qué demuestra, qué finge
+├── PLAN.md                # plan por fases: la fuente única de verdad
+├── CLAUDE.md / AGENTS.md  # convenciones y protocolo de reanudación
+├── docs/
+│   ├── arquitectura.md    # diagrama Mermaid y decisiones
+│   ├── requisitos.xlsx     # matriz de requisitos funcionales y no funcionales
+│   ├── modelo-datos.md
+│   ├── contratos/         # OpenAPI, esquemas de eventos
+│   ├── mockups/           # pantallas navegables, si aplica
+│   └── convenciones-<stack>.md
+├── progreso/              # estado por unidad e índice de avance
+├── apps/                  # los módulos ejecutables
+│   ├── api-java/
+│   └── procesador-python/
+├── packages/              # código compartido y clientes generados
+├── infra/                 # docker-compose, migraciones, datos semilla
+└── scripts/               # arranque, semillas, demo
+```
+
+Reglas del mono-repo:
+
+- **Un solo comando de arranque** en la raíz (`make demo`, `docker compose up` o `./scripts/run.sh`). Es lo primero que se construye y lo último que se rompe.
+- **Un módulo, un dueño.** Cada módulo tiene un subagente responsable durante la fase.
+- **Los contratos viven en la raíz**, no dentro de un módulo. Si el contrato pertenece a quien lo produce, quien lo consume queda subordinado.
+- **Datos semilla siempre.** Un prototipo con la base vacía no demuestra nada; que el arranque deje datos listos para la demo.
+- **Una sola configuración de calidad por stack**, en la raíz, para que todos los módulos del mismo lenguaje se vean iguales.
+
+## Protocolo de delegación
+
+Al invocar a un subagente, entrégale siempre:
+
+1. **Objetivo** de la tarea y su identificador en el `PLAN.md`.
+2. **Contexto mínimo suficiente:** el artefacto de diseño o contrato aplicable, y nada más.
+3. **Criterios de aceptación** verificables, tomados del plan.
+4. **Límites:** qué archivos o módulos puede tocar y cuáles no.
+5. **Qué debe devolver:** el código, más un reporte breve de decisiones, dificultades y pendientes.
+
+Cuando recibas su resultado, **intégralo y verifícalo tú**: que compile, que corra, que respete el contrato. No encadenes una delegación con otra sin comprobar la primera; un error propagado entre agentes cuesta mucho más que detenerse a verificar.
+
+## Reanudación
+
+El `PLAN.md` y la carpeta `progreso/` son lo que permite retomar el trabajo si la sesión se corta por contexto o por tiempo. Manténlos actualizados al cerrar cada fase, no al final. Al reanudar, **lee primero el estado y después el código**, y confirma con el usuario dónde se quedó antes de seguir construyendo.
+
+## Compatibilidad entre agentes
+
+Este skill funciona en **Claude Code**, **Cursor** e **IntelliJ IDEA Ultimate (Junie)**. El contenido es idéntico en los tres entornos; solo cambia el archivo donde vive:
+
+| Entorno | Ubicación |
+|---------|-----------|
+| Claude Code y Claude.ai | `.claude/skills/prototype-kickoff/SKILL.md` |
+| Cursor | `.cursor/rules/prototype-kickoff.mdc` (generado en `dist/cursor/`) |
+| IntelliJ IDEA Ultimate (Junie) | `.junie/rules/prototype-kickoff.md` o su contenido dentro de `AGENTS.md` (generado en `dist/junie/`) |
+| Google Antigravity | `.agents/rules/prototype-kickoff*.md` (generado en `dist/antigravity/`) |
+
+Los pasos de instalación están en `INSTALL.md`.
+
+Al ejecutar, aplica estas reglas de portabilidad:
+
+- Cuando el texto diga "usa la skill X", entiéndelo como **"usa la skill o regla X si el entorno la ofrece; si no está disponible, aplica sus principios de forma inline y dilo"**. Nunca supongas que otra skill está cargada.
+- Las herramientas concretas que se mencionan son orientativas. Si el entorno no tiene una equivalente, **dilo en lugar de simular que la usaste**.
+- **Antigravity limita cada archivo de reglas a 12.000 caracteres.** Si esta guía se entregó dividida en varias partes numeradas, léelas todas: son un solo documento y ninguna se sostiene sola.
+- No dependas de rutas, comandos ni mecanismos propios de un solo agente. Todo lo que este skill produce debe quedar en archivos del repositorio, que es lo único que los tres entornos comparten.
+
+- **Los subagentes existen como tales solo en Claude Code**, donde se declaran en `.claude/agents/`. En **Google Antigravity**, el Agent Manager sí permite varios agentes en paralelo: úsalo asignando un rol por agente y respetando el mismo tope de dos desarrolladores concurrentes. En Cursor y en Junie, que no tienen subagentes, **ejecuta los roles en secuencia dentro de la misma sesión**: anuncia de forma explícita qué rol asumes en cada turno, carga la definición correspondiente desde `agents/` y respeta los mismos límites (un rol a la vez, contexto mínimo suficiente, reporte al project-manager al cerrar cada tarea). Sin subagentes, el tope de dos desarrolladores concurrentes se convierte en **un rol por turno**, y la disciplina de reportar y registrar el avance pasa a ser todavía más importante, porque es lo único que conserva el estado entre turnos.
+
+## Principios de trabajo
+
+1. **Un prototipo se mide corriendo**, no leyendo.
+2. **Diseño validado antes de la primera línea de código.**
+3. **El contrato primero:** es lo que permite paralelizar sin bloqueos.
+4. **Un módulo, un dueño, un turno.** Nunca dos agentes en el mismo archivo.
+5. **Un solo lenguaje, un solo desarrollador; una sola nube, un solo especialista:** el rol que no aporta trabajo no se convoca.
+6. **Máximo dos desarrolladores a la vez.** Más agentes en paralelo no acortan el prototipo, multiplican el costo.
+7. **Ninguna tarea se cierra sin pruebas en verde**, y ninguna se cierra sin reportarse.
+8. **Empieza por lo que hay que demostrar**, no por lo que es fácil.
+9. **Verifica entre delegaciones:** un error propagado entre agentes es el más caro de todos.
+10. **Contexto mínimo suficiente** para cada subagente: de más distrae, de menos hace inventar.
+11. **Recortar alcance a tiempo es sano;** descubrirlo el último día no lo es.
+12. **Lo que el prototipo finge, se escribe.**

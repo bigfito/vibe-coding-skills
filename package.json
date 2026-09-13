@@ -1,0 +1,32 @@
+{
+  "name": "agent-skills",
+  "version": "1.0.0",
+  "description": "Suite de skills de agente (arquitectura, gestión de proyectos, desarrollo Java/Python y nube GCP/AWS) para Claude Code, Cursor, IntelliJ IDEA Ultimate (Junie) y Google Antigravity.",
+  "type": "module",
+  "bin": {
+    "agent-skills": "bin/agent-skills.cjs"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "skills/",
+    "install.sh",
+    "install.ps1",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "claude-code",
+    "cursor",
+    "junie",
+    "antigravity",
+    "agent-skills",
+    "ai-agents"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "check": "node bin/agent-skills.cjs --check"
+  }
+}
