@@ -41,6 +41,8 @@ Se abrirá una ventana con texto y un cursor parpadeando. Es normal que se vea v
 
 Las skills se instalan **dentro de la carpeta del proyecto** en el que vas a trabajar, no en todo el computador. Por eso primero hay que "entrar" en esa carpeta.
 
+> **Si este paso se te atraviesa, sáltatelo.** Cuando el instalador vea que no estás en un proyecto, te preguntará en qué carpeta instalar y podrás **arrastrarla hasta la ventana** para responder. También puedes indicarla de antemano con `--dir=/ruta/de/mi/proyecto`.
+
 Escribe `cd` (de *change directory*), un espacio, y la ruta de tu carpeta:
 
 ```
@@ -236,6 +238,7 @@ npx github:bigfito/vibe-coding-skills --all --dry-run      # simula, no escribe 
 | Opción | Efecto |
 |--------|--------|
 | `--skills=a,b` | Instala solo esas skills |
+| `--dir=ruta` | Carpeta del proyecto donde instalar (por defecto, la actual) |
 | `--envs=a,b` | Destinos: `claude`, `cursor`, `junie`, `antigravity` |
 | `--all` | Todas las skills |
 | `--yes`, `-y` | Sin pedir confirmación |

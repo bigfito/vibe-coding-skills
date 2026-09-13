@@ -451,6 +451,85 @@ STUBEOF
   contiene "$salida" "No encontre winget" "install.ps1 sin gestor da instrucciones manuales"
 fi
 
+# ------------------------------------------------- 7. Elección de carpeta
+
+titulo "7. Elegir la carpeta del proyecto"
+
+# Alimenta un proceso en un terminal real, dejando tiempo entre respuestas para
+# que cada pregunta se lea por separado.
+en_pty_dir() {
+  local dir="$1" argumentos="$2"; shift 2
+  local transcripcion="$TMP/pty-dir.txt"
+  rm -f "$transcripcion"
+  {
+    # Un respiro inicial: si se escribe antes de que el programa arranque, el
+    # terminal se traga la primera línea y la prueba mide otra cosa.
+    sleep 1
+    for linea in "$@"; do printf '%s\n' "$linea"; sleep 0.6; done
+  } | script -q -c "cd '$dir' && node '$RAIZ/bin/agent-skills.cjs' $argumentos" "$transcripcion" >/dev/null 2>&1
+  cat "$transcripcion"
+}
+
+DESTINO_DIR="$TMP/otro proyecto"
+SIN_MARCAS="$TMP/carpeta-suelta"
+CON_MARCAS="$TMP/proyecto-marcado"
+mkdir -p "$DESTINO_DIR" "$SIN_MARCAS" "$CON_MARCAS"
+: > "$CON_MARCAS/package.json"
+
+# 7a. --dir= instala en otra carpeta, aunque tenga espacios.
+salida="$(cd "$SIN_MARCAS" && node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=claude --yes --dir="$DESTINO_DIR" 2>&1)"
+contiene "$salida" "instalados" "--dir instala sin preguntar"
+[ -f "$DESTINO_DIR/.claude/skills/java-developer/SKILL.md" ] \
+  && pasa "--dir instala en la carpeta indicada" || falla "--dir instala en la carpeta indicada"
+[ ! -d "$SIN_MARCAS/.claude" ] && pasa "--dir no toca la carpeta actual" || falla "--dir no toca la carpeta actual"
+rm -rf "$DESTINO_DIR/.claude"
+
+# 7b. Una ruta escrita como la deja arrastrar la carpeta (espacios escapados).
+salida="$(cd "$SIN_MARCAS" && node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=claude --yes --dir="${DESTINO_DIR// /\\ }" 2>&1)"
+[ -f "$DESTINO_DIR/.claude/skills/java-developer/SKILL.md" ] \
+  && pasa "--dir entiende los espacios escapados de arrastrar" || falla "--dir entiende los espacios escapados de arrastrar"
+rm -rf "$DESTINO_DIR/.claude"
+
+# 7c. --dir con una carpeta que no existe: lo dice y no inventa nada.
+salida="$(node "$RAIZ/bin/agent-skills.cjs" --all --yes --dir="$TMP/no-existe" 2>&1)"
+codigo=$?
+contiene "$salida" "no existe" "--dir inexistente avisa con claridad"
+igual "$codigo" "1" "--dir inexistente termina con error"
+
+if command -v script >/dev/null 2>&1; then
+  # 7d. Carpeta que no parece proyecto: pregunta y usa la ruta indicada.
+  salida="$(en_pty_dir "$SIN_MARCAS" "" "$DESTINO_DIR" "3" "1" "")"
+  contiene "$salida" "no parece un proyecto" "pregunta cuando la carpeta no parece un proyecto"
+  contiene "$salida" "Se instalará en" "confirma la carpeta elegida"
+  [ -f "$DESTINO_DIR/.claude/skills/java-developer/SKILL.md" ] \
+    && pasa "instala en la carpeta que responde el usuario" || falla "instala en la carpeta que responde el usuario"
+  [ ! -d "$SIN_MARCAS/.claude" ] && pasa "no instala en la carpeta actual si eligió otra" || falla "no instala en la carpeta actual si eligió otra"
+  rm -rf "$DESTINO_DIR/.claude"
+
+  # 7e. Enter a secas: se queda en la carpeta actual.
+  salida="$(en_pty_dir "$SIN_MARCAS" "" "" "3" "1" "")"
+  [ -f "$SIN_MARCAS/.claude/skills/java-developer/SKILL.md" ] \
+    && pasa "Enter a secas usa la carpeta actual" || falla "Enter a secas usa la carpeta actual"
+  rm -rf "$SIN_MARCAS/.claude"
+
+  # 7f. Dentro de un proyecto de verdad, no molesta con la pregunta.
+  salida="$(en_pty_dir "$CON_MARCAS" "" "3" "1" "")"
+  no_contiene "$salida" "no parece un proyecto" "no pregunta si ya estás en un proyecto"
+  [ -f "$CON_MARCAS/.claude/skills/java-developer/SKILL.md" ] \
+    && pasa "instala en el proyecto detectado" || falla "instala en el proyecto detectado"
+  rm -rf "$CON_MARCAS/.claude"
+
+  # 7g. Ruta que no existe: ofrece crearla.
+  NUEVA="$TMP/carpeta-nueva"
+  rm -rf "$NUEVA"
+  salida="$(en_pty_dir "$SIN_MARCAS" "" "$NUEVA" "s" "3" "1" "")"
+  contiene "$salida" "¿La creo?" "ofrece crear la carpeta si no existe"
+  [ -d "$NUEVA" ] && pasa "crea la carpeta cuando el usuario acepta" || falla "crea la carpeta cuando el usuario acepta"
+  rm -rf "$NUEVA" "$SIN_MARCAS/.claude"
+else
+  salta "preguntas de carpeta (falta el comando 'script')"
+fi
+
 # ------------------------------------------------------------------- resumen
 
 printf '\n'
