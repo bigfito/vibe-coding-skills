@@ -15,6 +15,20 @@ Qué cambió en cada entrega de **Vibe Coding Skills**.
 >
 > Las versiones **1.0.0 a 2.0.0 se documentan de forma retroactiva**: el proyecto se desarrolló sin numerar y sus hitos se reconstruyeron a partir del historial de commits.
 
+### 🏷️ Etiquetas
+
+Cada versión corresponde a un commit. Para crear las etiquetas en el repositorio:
+
+```bash
+git tag -a v1.0.0 5432bba -m "Versión 1.0.0"
+git tag -a v1.1.0 7b68018 -m "Versión 1.1.0"
+git tag -a v1.2.0 1f81221 -m "Versión 1.2.0"
+git tag -a v1.3.0 b612f97 -m "Versión 1.3.0"
+git tag -a v2.0.0 606a03d -m "Versión 2.0.0"
+git tag -a v2.1.0 fca9a38 -m "Versión 2.1.0"
+git push origin --tags
+```
+
 ---
 
 ## 2.1.0 — 2026-09-13
