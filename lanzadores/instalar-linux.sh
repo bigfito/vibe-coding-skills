@@ -1,4 +1,8 @@
 #!/bin/bash
+# Vibe Coding Skills
+# Copyright (c) 2026 Adolfo Orozco <bigfito@gmail.com>
+# Licencia MIT: ver el archivo LICENSE en la raíz del repositorio.
+#
 # Lanzador de Vibe Coding Skills para Linux.
 #
 # Descarga este archivo y ábrelo desde tu explorador de archivos con "Ejecutar

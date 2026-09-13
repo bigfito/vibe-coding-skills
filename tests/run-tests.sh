@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Vibe Coding Skills
+# Copyright (c) 2026 Adolfo Orozco <bigfito@gmail.com>
+# Licencia MIT: ver el archivo LICENSE en la raíz del repositorio.
+#
 # Pruebas de extremo a extremo de Vibe Coding Skills.
 #
 #   bash tests/run-tests.sh
@@ -997,6 +1001,76 @@ if [ -n "${PWSH:-}" ]; then
 else
   salta "paridad de banderas en PowerShell (pwsh no está instalado)"
 fi
+
+# ------------------------------- 14. Versión, notas de versión y copyright
+
+titulo "14. Versión, notas y copyright"
+
+VERSION_PAQUETE="$(node -p "require('$RAIZ/package.json').version")"
+
+# La versión vive en package.json; los dos arranques la llevan escrita porque se
+# descargan sueltos. Aquí se comprueba que no se hayan desfasado.
+igual "$(grep -oE '^VERSION="[0-9.]+"' "$RAIZ/install.sh" | grep -oE '[0-9.]+')" "$VERSION_PAQUETE" \
+  "install.sh lleva la misma versión que el paquete"
+igual "$(grep -oE "^\\\$Version = '[0-9.]+'" "$RAIZ/install.ps1" | grep -oE '[0-9.]+')" "$VERSION_PAQUETE" \
+  "install.ps1 lleva la misma versión que el paquete"
+
+igual "$(node "$RAIZ/bin/vibe-coding-skills.cjs" --version)" "Vibe Coding Skills v$VERSION_PAQUETE" \
+  "el instalador responde a --version"
+igual "$(bash "$RAIZ/install.sh" --version)" "Vibe Coding Skills v$VERSION_PAQUETE" \
+  "install.sh responde a --version"
+igual "$(node "$RAIZ/bin/vibe-coding-skills.cjs" -v)" "Vibe Coding Skills v$VERSION_PAQUETE" \
+  "el atajo -v también funciona"
+if [ -n "${PWSH:-}" ]; then
+  igual "$("$PWSH" -NoProfile -File "$RAIZ/install.ps1" --version)" "Vibe Coding Skills v$VERSION_PAQUETE" \
+    "install.ps1 responde a --version"
+fi
+
+# --version no puede tener efectos: es solo mirar.
+CASA_V2="$(casa_limpia version)"
+PROY_V2="$TMP/proyecto-version"
+mkdir -p "$PROY_V2"
+(cd "$PROY_V2" && HOME="$CASA_V2" node "$RAIZ/bin/vibe-coding-skills.cjs" --version >/dev/null 2>&1)
+igual "$(find "$PROY_V2" "$CASA_V2" -type f | wc -l | tr -d ' ')" "0" "--version no escribe nada"
+
+# Cada versión publicada tiene que estar documentada.
+[ -f "$RAIZ/RELEASES.md" ] && pasa "existe el documento de notas de versión" || falla "existe el documento de notas de versión"
+contiene "$(cat "$RAIZ/RELEASES.md")" "## $VERSION_PAQUETE " "las notas documentan la versión actual"
+contiene "$(cat "$RAIZ/RELEASES.md")" "Novedades" "las notas separan las novedades"
+contiene "$(cat "$RAIZ/RELEASES.md")" "Correcciones" "las notas separan las correcciones"
+
+# El versionamiento es secuencial: cada escalón sube uno, sin saltos.
+COPIA="$TMP/copia-version"
+rm -rf "$COPIA"; mkdir -p "$COPIA"
+cp -r "$RAIZ/package.json" "$RAIZ/install.sh" "$RAIZ/install.ps1" "$RAIZ/RELEASES.md" "$COPIA/"
+mkdir -p "$COPIA/scripts" && cp "$RAIZ/scripts/version.sh" "$COPIA/scripts/"
+(cd "$COPIA" && bash scripts/version.sh parche >/dev/null 2>&1)
+esperada="$(node -e "
+  var v = '$VERSION_PAQUETE'.split('.');
+  console.log(v[0] + '.' + v[1] + '.' + (Number(v[2]) + 1));
+")"
+igual "$(node -p "require('$COPIA/package.json').version")" "$esperada" "el script sube un escalón de parche"
+igual "$(grep -oE '^VERSION="[0-9.]+"' "$COPIA/install.sh" | grep -oE '[0-9.]+')" "$esperada" "el script actualiza install.sh"
+contiene "$(cat "$COPIA/RELEASES.md")" "## $esperada " "el script abre la sección de notas de la versión nueva"
+
+(cd "$COPIA" && bash scripts/version.sh mayor >/dev/null 2>&1)
+igual "$(node -p "require('$COPIA/package.json').version")" "$(node -e "console.log((Number('$VERSION_PAQUETE'.split('.')[0]) + 1) + '.0.0')")" \
+  "el script sube un escalón mayor"
+
+# Todo el código y los scripts llevan el aviso de copyright del autor.
+sin_copyright=""
+for archivo in "$RAIZ"/install.sh "$RAIZ"/install.ps1 "$RAIZ"/bin/*.cjs "$RAIZ"/lib/*.cjs "$RAIZ"/lib/*.mjs \
+               "$RAIZ"/lib/*.sh "$RAIZ"/lib/*.ps1 "$RAIZ"/lanzadores/* "$RAIZ"/scripts/*.sh "$RAIZ"/tests/*.sh; do
+  [ -f "$archivo" ] || continue
+  if ! head -12 "$archivo" | grep -q "Copyright (c) .* Adolfo Orozco <bigfito@gmail.com>"; then
+    sin_copyright="$sin_copyright $(basename "$archivo")"
+  fi
+done
+[ -z "$sin_copyright" ] && pasa "todos los archivos de código llevan el copyright del autor" \
+                        || falla "todos los archivos de código llevan el copyright del autor" "faltan:$sin_copyright"
+
+contiene "$(cat "$RAIZ/LICENSE")" "Adolfo Orozco" "la licencia nombra al autor"
+igual "$(node -p "require('$RAIZ/package.json').author")" "Adolfo Orozco <bigfito@gmail.com>" "package.json declara al autor"
 
 # ------------------------------------------------------------------- resumen
 

@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Vibe Coding Skills
+# Copyright (c) 2026 Adolfo Orozco <bigfito@gmail.com>
+# Licencia MIT: ver el archivo LICENSE en la raíz del repositorio.
+#
 # Arranque de Vibe Coding Skills para macOS, Linux y WSL.
 #
 #   curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.sh | bash
@@ -10,6 +14,7 @@
 #   4. y solo entonces ejecutar el instalador real con npx.
 #
 # Opciones:
+#   -v, --version  muestra la versión y termina
 #   --check        solo comprueba el sistema y no instala ni cambia nada
 #   --sin-node     copia las skills sin Node, sin instalar nada en el sistema
 #   --global       instala en la carpeta personal: sirve para todos los proyectos
@@ -33,6 +38,11 @@ var() { # var NOMBRE POR_DEFECTO  → valor de VIBE_SKILLS_NOMBRE, AGENT_SKILLS_
 REPO="$(var REPO github:bigfito/vibe-coding-skills)"
 NODE_MINIMO=18
 
+# Versión de este arranque. Se descarga suelto (curl … | bash), así que no puede
+# leer package.json: el script scripts/version.sh la mantiene al día y una
+# prueba comprueba que coincida con la del paquete.
+VERSION="2.1.0"
+
 RAW_BASE="$(var RAW https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main)"
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "")"
 
@@ -54,6 +64,7 @@ ARGS_INSTALADOR=()
 # shellcheck disable=SC2034
 for arg in "$@"; do
   case "$arg" in
+    -v|--version) printf 'Vibe Coding Skills v%s\n' "$VERSION"; exit 0 ;;
     -y|--yes) ASUMIR_SI=1; SN_ASUMIR=1; ARGS_INSTALADOR+=("$arg") ;;
     --no-install) SIN_INSTALAR=1 ;;
     # Copia las skills sin Node: no hace falta instalar nada en el sistema.

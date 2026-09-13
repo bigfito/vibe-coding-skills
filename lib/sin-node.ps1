@@ -1,3 +1,7 @@
+# Vibe Coding Skills
+# Copyright (c) 2026 Adolfo Orozco <bigfito@gmail.com>
+# Licencia MIT: ver el archivo LICENSE en la raiz del repositorio.
+
 <#
   Modo sin Node de Vibe Coding Skills para Windows: instala las skills
   copiando archivos, sin Node, npm ni git.

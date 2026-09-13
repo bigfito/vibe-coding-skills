@@ -1,5 +1,8 @@
 @echo off
 setlocal
+rem Vibe Coding Skills
+rem Copyright (c) 2026 Adolfo Orozco <bigfito@gmail.com>
+rem Licencia MIT: ver el archivo LICENSE en la raiz del repositorio.
 rem Lanzador de doble clic de Vibe Coding Skills para Windows.
 rem
 rem Descarga este archivo y haz doble clic. Se abre una ventana y arranca el

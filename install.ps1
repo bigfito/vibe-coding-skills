@@ -1,3 +1,7 @@
+# Vibe Coding Skills
+# Copyright (c) 2026 Adolfo Orozco <bigfito@gmail.com>
+# Licencia MIT: ver el archivo LICENSE en la raiz del repositorio.
+
 <#
   Arranque de Vibe Coding Skills para Windows (PowerShell 5.1 o superior).
 
@@ -10,6 +14,7 @@
     4. y solo entonces ejecutar el instalador real con npx.
 
   Opciones:
+    -v, --version  muestra la version y termina
     --check        solo comprueba el sistema y no instala ni cambia nada
     --sin-node     copia las skills sin Node, sin instalar nada en el sistema
     --global       instala en la carpeta personal: sirve para todos los proyectos
@@ -25,6 +30,11 @@
 
 $ErrorActionPreference = 'Stop'
 $NodeMinimo = 18
+
+# Version de este arranque. Se descarga suelto (irm ... | iex), asi que no puede
+# leer package.json: el script scripts/version.sh la mantiene al dia y una
+# prueba comprueba que coincida con la del paquete.
+$Version = '2.1.0'
 # Las variables se llaman VIBE_SKILLS_*; los nombres antiguos AGENT_SKILLS_*
 # se siguen aceptando para no romper a quien ya los tenga en un script.
 function Get-VarEntorno($nombre, $porDefecto = '') {
@@ -53,6 +63,7 @@ $global:SnAqui = if ($PSScriptRoot) { $PSScriptRoot } else { '' }
 $ArgsInstalador = @()
 foreach ($a in $args) {
     switch -Regex ($a) {
+        '^(-v|--version)$' { Write-Host "Vibe Coding Skills v$Version"; exit 0 }
         '^(-y|--yes)$'      { $AsumirSi = $true; $ArgsInstalador += $a }
         '^--no-install$'    { $SinInstalar = $true }
         # Copia las skills sin Node: no instala nada en el sistema.

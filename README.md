@@ -4,7 +4,8 @@
 
 **Convierte tu asistente de IA en un equipo de especialistas.**
 
-[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-blue)](LICENSE)
+[![Versión](https://img.shields.io/github/package-json/v/bigfito/vibe-coding-skills?label=versi%C3%B3n&color=blue)](RELEASES.md)
+[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-green)](LICENSE)
 [![Node.js 18+](https://img.shields.io/badge/Node.js-18%2B-brightgreen?logo=node.js&logoColor=white)](https://nodejs.org/es/download)
 [![Windows · macOS · Linux](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-informational)](#5--instalación-en-4-pasos)
 [![Pruebas de extremo a extremo](https://img.shields.io/badge/pruebas-de%20extremo%20a%20extremo-success)](#-para-el-dueño-del-repositorio)
@@ -381,6 +382,7 @@ Si instalaste `solution-architect`, en lugar de lanzarse a escribir código debe
 
 ## 7. 🔧 Mantenimiento
 
+- 🔢 **Saber qué versión tienes:** añade `--version` a cualquiera de las líneas del paso [5.2](#52--ejecuta-el-instalador). Lo que trae cada versión está en [RELEASES.md](RELEASES.md).
 - 🔄 **Actualizar:** repite el paso [5.2](#52--ejecuta-el-instalador) añadiendo `--force`, para que reemplace los archivos anteriores.
 - 🗑️ **Quitar las skills:** borra las carpetas de la tabla de [¿Global o por proyecto?](#4--global-o-por-proyecto). No hay desinstalador porque no hace falta: solo son archivos de texto. Si las instalaste globalmente, borra además el bloque entre `<!-- vibe-coding-skills: inicio -->` y `<!-- vibe-coding-skills: fin -->` de `~/.junie/AGENTS.md` y `~/.gemini/AGENTS.md`.
 - 👥 **Trabajo en equipo:** si tu proyecto usa git, sube las carpetas al repositorio (`git add .claude .cursor .junie .agents`). Así todo el equipo obtiene el mismo comportamiento sin instalar nada.
@@ -417,6 +419,7 @@ npx github:bigfito/vibe-coding-skills --all --dry-run                       # si
 | `--check` | Solo diagnostica: no instala ni cambia nada |
 | `--no-install` | Nunca instala requisitos: solo dice qué falta |
 | `--sin-node` | Copia las skills sin Node *(solo en `install.sh` e `install.ps1`)* |
+| `--version`, `-v` | Muestra la versión y termina |
 | `--help` | Ayuda |
 
 Todas funcionan igual por los dos caminos (con Node y con `--sin-node`), salvo `--sin-node` mismo, que solo tiene sentido en los arranques `install.sh` e `install.ps1`.
@@ -467,9 +470,26 @@ Cubren la sintaxis de los puntos de entrada, la detección de sistema y gestor, 
 npx github:bigfito/vibe-coding-skills --check
 ```
 
+**Publicar una versión.** El versionamiento es secuencial: cada entrega sube un escalón, sin saltos.
+
+```bash
+bash scripts/version.sh parche     # 2.1.0 → 2.1.1   correcciones
+bash scripts/version.sh menor      # 2.1.0 → 2.2.0   funcionalidad nueva
+bash scripts/version.sh mayor      # 2.1.0 → 3.0.0   cambios incompatibles
+```
+
+El script actualiza `package.json` (la fuente de verdad), la versión escrita en los dos arranques y abre la sección correspondiente en [RELEASES.md](RELEASES.md) para que se escriba qué cambió. Después:
+
+```bash
+git add -A && git commit -m "Versión X.Y.Z: …"
+git tag -a vX.Y.Z -m "Versión X.Y.Z" && git push --follow-tags
+```
+
 ---
 <div align="center">
 
-Licencia MIT · Hecho para que tu asistente trabaje como un especialista 🎓
+**Vibe Coding Skills** · Copyright © 2026 Adolfo Orozco · Licencia [MIT](LICENSE)
+
+Hecho para que tu asistente trabaje como un especialista 🎓
 
 </div>

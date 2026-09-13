@@ -1,4 +1,8 @@
 #!/bin/bash
+# Vibe Coding Skills
+# Copyright (c) 2026 Adolfo Orozco <bigfito@gmail.com>
+# Licencia MIT: ver el archivo LICENSE en la raíz del repositorio.
+#
 # Lanzador de doble clic de Vibe Coding Skills para macOS.
 #
 # Descarga este archivo y haz doble clic. macOS abre la Terminal y ejecuta el

@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 /*
+ * Vibe Coding Skills
+ * Copyright (c) 2026 Adolfo Orozco <bigfito@gmail.com>
+ * Licencia MIT: ver el archivo LICENSE en la raíz del repositorio.
+ */
+/*
  * Punto de entrada de Vibe Coding Skills.
  *
  * Este archivo se mantiene deliberadamente en CommonJS y con sintaxis antigua
@@ -41,6 +46,7 @@ function variable(nombre) {
 
 function leerOpciones(args) {
   return {
+    version: args.indexOf('--version') !== -1 || args.indexOf('-v') !== -1,
     check: args.indexOf('--check') !== -1 || args.indexOf('--doctor') !== -1 || variable('CHECK') === '1',
     yes: args.indexOf('--yes') !== -1 || args.indexOf('-y') !== -1 || variable('ASSUME_YES') === '1',
     noInstalar: args.indexOf('--no-install') !== -1 || variable('NO_INSTALL') === '1',
@@ -93,9 +99,23 @@ function rutas(carpetas, destino) {
 
 // ------------------------------------------------------------------ arranque
 
+/** La versión sale de package.json: una sola fuente para todo el proyecto. */
+function version() {
+  try {
+    return require(path.join(__dirname, '..', 'package.json')).version;
+  } catch (e) {
+    return 'desconocida';
+  }
+}
+
 function main() {
   var args = process.argv.slice(2);
   var o = leerOpciones(args);
+
+  if (o.version) {
+    console.log('Vibe Coding Skills v' + version());
+    return;
+  }
 
   // Modo diagnóstico: dice qué hay, qué falta y qué haría para arreglarlo,
   // pero no toca el sistema. Comprobar nunca instala.
