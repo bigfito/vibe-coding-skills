@@ -17,14 +17,30 @@
 
 ## 📖 Índice
 
-1. [¿Qué es esto y para qué sirve?](#1--qué-es-esto-y-para-qué-sirve)
-2. [Las siete skills](#2--las-siete-skills)
-3. [¿Qué necesita mi computador?](#3--qué-necesita-mi-computador)
-4. [¿Global o por proyecto?](#4--global-o-por-proyecto)
-5. [Instalación en 4 pasos](#5--instalación-en-4-pasos)
-6. [Si algo sale mal](#6--si-algo-sale-mal)
-7. [Mantenimiento](#7--mantenimiento)
-8. [Opciones avanzadas](#8--opciones-avanzadas)
+**1.** [¿Qué es esto y para qué sirve?](#1--qué-es-esto-y-para-qué-sirve)
+  · 1.1 [Funcionan en cuatro herramientas](#11--funcionan-en-cuatro-herramientas)
+  · 1.2 [Lo que hace el instalador por ti](#12--lo-que-hace-el-instalador-por-ti)
+
+**2.** [Las siete skills](#2--las-siete-skills)
+
+**3.** [¿Qué necesita mi computador?](#3--qué-necesita-mi-computador)
+  · 3.1 [Compruébalo sin instalar nada](#31--compruébalo-sin-instalar-nada)
+  · 3.2 [Qué hace el instalador en cada caso](#32--qué-hace-el-instalador-en-cada-caso)
+  · 3.3 [Modo sin Node](#33--modo-sin-node)
+
+**4.** [¿Global o por proyecto?](#4--global-o-por-proyecto)
+
+**5.** [Instalación en 4 pasos](#5--instalación-en-4-pasos)
+  · 5.1 [Abre la terminal](#51--abre-la-terminal)
+  · 5.2 [Ejecuta el instalador](#52--ejecuta-el-instalador)
+  · 5.3 [Responde tres preguntas](#53--responde-tres-preguntas)
+  · 5.4 [Comprueba que funcionó](#54--comprueba-que-funcionó)
+
+**6.** [Si algo sale mal](#6--si-algo-sale-mal)
+
+**7.** [Mantenimiento](#7--mantenimiento)
+
+**8.** [Opciones avanzadas](#8--opciones-avanzadas)
 
 ---
 
@@ -42,7 +58,7 @@ Una **skill** es un documento de instrucciones que tu asistente de IA lee antes 
 > [!TIP]
 > No tienes que escribir nada especial ni recordar ningún comando. Una vez instaladas, **el asistente las usa solo** cuando la conversación lo amerita.
 
-### 🛠️ Funcionan en cuatro herramientas
+### 1.1 🛠️ Funcionan en cuatro herramientas
 
 | | Herramienta |
 |---|---|
@@ -53,7 +69,7 @@ Una **skill** es un documento de instrucciones que tu asistente de IA lee antes 
 
 Puedes instalarlas en una o en todas.
 
-### ✅ Lo que hace el instalador por ti
+### 1.2 ✅ Lo que hace el instalador por ti
 
 - 🔍 **Detecta tu sistema operativo** y qué asistentes tienes instalados.
 - 📦 **Comprueba los programas necesarios** y, si falta alguno, **te pide permiso** y lo instala.
@@ -82,7 +98,7 @@ Puedes instalarlas en una o en todas.
 
 Cuatro programas: **Node.js 18+**, **npm**, **npx** y **git**. 🙌 **No tienes que instalarlos tú.**
 
-### 🔎 Compruébalo sin instalar nada
+### 3.1 🔎 Compruébalo sin instalar nada
 
 **🪟 Windows (PowerShell)**
 
@@ -103,7 +119,7 @@ Te responde dos cosas y **termina sin tocar nada**:
 
 Funciona **aunque todavía no tengas Node.js**.
 
-### 🤔 Qué hace el instalador en cada caso
+### 3.2 🤔 Qué hace el instalador en cada caso
 
 | Situación | Qué hace |
 |---|---|
@@ -114,7 +130,7 @@ Funciona **aunque todavía no tengas Node.js**.
 | 🔐 Tu sistema pide contraseña | Te la pide la propia orden `sudo`, no el instalador |
 | ❓ No hay gestor de paquetes conocido | Te dice cómo instalarlo a mano, paso a paso |
 | 🕰️ Tu Linux solo trae un Node antiguo | Te lo dice y te da los comandos de `nvm` |
-| 🙅 No quieres instalar nada | Te ofrece el **[modo sin Node](#-modo-sin-node)** |
+| 🙅 No quieres instalar nada | Te ofrece el **[modo sin Node](#33--modo-sin-node)** |
 | 🧩 No tienes ningún asistente instalado | Te lo dice y te deja seguir: las carpetas quedan listas |
 | 🔄 Se instaló pero la terminal no lo ve | Te avisa de que la cierres y la vuelvas a abrir |
 
@@ -123,7 +139,7 @@ Funciona **aunque todavía no tengas Node.js**.
 
 **Lo que el instalador *no* hace:** ❌ no cambia versiones que ya te funcionan · ❌ no instala nada fuera de esos cuatro programas · ❌ no modifica tu sistema si respondes que no · ❌ no toca nada fuera de las carpetas de skills.
 
-### 🪶 Modo sin Node
+### 3.3 🪶 Modo sin Node
 
 ¿No puedes instalar Node (sin permisos de administrador) o no quieres? Las skills son solo archivos de texto:
 
@@ -200,7 +216,7 @@ Ya sabes **qué skills hay**, **qué necesita tu computador** y **dónde van a q
 > [!NOTE]
 > Si nunca has usado una terminal, no te preocupes: sigue estos pasos en orden. Toma unos **tres minutos**.
 
-### 🖥️ Paso 1. Abre la terminal
+### 5.1 🖥️ Abre la terminal
 
 La terminal es una ventana donde se escriben comandos en lugar de hacer clic. Viene incluida en todos los sistemas.
 
@@ -234,7 +250,7 @@ Se abrirá una ventana con texto y un cursor parpadeando. Es normal que se vea v
 
 ---
 
-### ▶️ Paso 2. Ejecuta el instalador
+### 5.2 ▶️ Ejecuta el instalador
 
 Elige **una** de las dos opciones.
 
@@ -271,7 +287,7 @@ curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/ins
 
 ---
 
-### 🙋 Paso 3. Responde tres preguntas
+### 5.3 🙋 Responde tres preguntas
 
 El instalador revisa primero tu computador. Si le falta algo, **te lo dice y te pide permiso**:
 
@@ -325,7 +341,7 @@ Herramientas detectadas en este computador
 
 ---
 
-### 🎉 Paso 4. Comprueba que funcionó
+### 5.4 🎉 Comprueba que funcionó
 
 Verás un mensaje como este:
 
@@ -363,7 +379,7 @@ Si instalaste `solution-architect`, en lugar de lanzarse a escribir código debe
 
 ## 7. 🔧 Mantenimiento
 
-- 🔄 **Actualizar:** repite el paso 2 añadiendo `--force`, para que reemplace los archivos anteriores.
+- 🔄 **Actualizar:** repite el paso [5.2](#52--ejecuta-el-instalador) añadiendo `--force`, para que reemplace los archivos anteriores.
 - 🗑️ **Quitar las skills:** borra las carpetas de la tabla de [¿Global o por proyecto?](#4--global-o-por-proyecto). No hay desinstalador porque no hace falta: solo son archivos de texto. Si las instalaste globalmente, borra además el bloque entre `<!-- vibe-coding-skills: inicio -->` y `<!-- vibe-coding-skills: fin -->` de `~/.junie/AGENTS.md` y `~/.gemini/AGENTS.md`.
 - 👥 **Trabajo en equipo:** si tu proyecto usa git, sube las carpetas al repositorio (`git add .claude .cursor .junie .agents`). Así todo el equipo obtiene el mismo comportamiento sin instalar nada.
 
