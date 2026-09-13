@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Modo sin Node: instala las skills copiando archivos, sin Node, npm ni git.
+# Modo sin Node de Vibe Coding Skills: instala las skills copiando archivos,
+# sin Node, npm ni git.
 #
 # Las skills son archivos de texto; Node solo hace falta para el menú. Cuando
 # alguien no puede o no quiere instalar Node, este camino descarga el
@@ -13,9 +14,9 @@
 # Descarga y descomprime el repositorio en una carpeta temporal. Escribe la
 # ruta de la copia en la variable ORIGEN_SKILLS.
 sn_obtener_fuente() {
-  # Si ya hay una copia local (repositorio clonado, o AGENT_SKILLS_SRC), se usa
+  # Si ya hay una copia local (repositorio clonado, o VIBE_SKILLS_SRC), se usa
   # esa y no se descarga nada.
-  local local_dir="${AGENT_SKILLS_SRC:-}"
+  local local_dir="${VIBE_SKILLS_SRC:-${AGENT_SKILLS_SRC:-}}"
   if [ -z "$local_dir" ] && [ -d "$SN_AQUI/skills" ]; then local_dir="$SN_AQUI"; fi
   if [ -n "$local_dir" ] && [ -d "$local_dir/skills" ]; then
     ORIGEN_SKILLS="$local_dir"
@@ -29,7 +30,7 @@ sn_obtener_fuente() {
   fi
 
   local tmp archivo
-  tmp="$(mktemp -d 2>/dev/null || mktemp -d -t agent-skills)" || return 1
+  tmp="$(mktemp -d 2>/dev/null || mktemp -d -t vibe-coding-skills)" || return 1
   archivo="$tmp/repo.tar.gz"
 
   printf '\n  Descargando las skills…\n'
@@ -185,10 +186,10 @@ sn_indice() {
   carpeta="$(sn_base "$entorno" global)/rules"
   [ -d "$carpeta" ] || return 0
 
-  temporal="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/agent-skills-indice")"
+  temporal="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/vibe-coding-skills-indice")"
   {
     printf '%s\n' "$SN_MARCA_INICIO"
-    printf '## Skills de agent-skills instaladas globalmente\n\n'
+    printf '## Skills de Vibe Coding Skills instaladas globalmente\n\n'
     printf 'Estas guías están en `%s`. Cuando la tarea encaje con alguna,\n' "$carpeta"
     printf 'lee sus archivos antes de responder:\n\n'
     # Se agrupa por skill, igual que el instalador de Node, para que el índice
@@ -206,9 +207,17 @@ sn_indice() {
     printf '%s\n' "$SN_MARCA_FIN"
   } > "$temporal"
 
-  if [ -f "$archivo" ] && grep -qF "$SN_MARCA_INICIO" "$archivo"; then
+  # Se busca el bloque con las marcas actuales y, si no está, con las antiguas.
+  local marca_ini="$SN_MARCA_INICIO" marca_fin="$SN_MARCA_FIN"
+  if [ -f "$archivo" ] && ! grep -qF "$SN_MARCA_INICIO" "$archivo" \
+     && grep -qF "$SN_MARCA_INICIO_VIEJA" "$archivo"; then
+    marca_ini="$SN_MARCA_INICIO_VIEJA"
+    marca_fin="$SN_MARCA_FIN_VIEJA"
+  fi
+
+  if [ -f "$archivo" ] && grep -qF "$marca_ini" "$archivo"; then
     # Reemplaza el bloque anterior conservando el resto del archivo.
-    awk -v inicio="$SN_MARCA_INICIO" -v fin="$SN_MARCA_FIN" -v nuevo="$temporal" '
+    awk -v inicio="$marca_ini" -v fin="$marca_fin" -v nuevo="$temporal" '
       $0 == inicio { while ((getline linea < nuevo) > 0) print linea; saltando = 1; next }
       $0 == fin { saltando = 0; next }
       !saltando { print }
@@ -300,10 +309,14 @@ sn_preguntar_entornos() {
 # Devuelve 0 si instaló las skills.
 modo_sin_node() {
   SN_AQUI="${SN_AQUI:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)}"
-  SN_TARBALL="${AGENT_SKILLS_TARBALL:-https://codeload.github.com/bigfito/vibe-coding-skills/tar.gz/refs/heads/main}"
+  SN_TARBALL="${VIBE_SKILLS_TARBALL:-${AGENT_SKILLS_TARBALL:-https://codeload.github.com/bigfito/vibe-coding-skills/tar.gz/refs/heads/main}}"
   SN_FORZAR="${SN_FORZAR:-0}"
-  SN_MARCA_INICIO="<!-- agent-skills: inicio (bloque generado, no editar) -->"
-  SN_MARCA_FIN="<!-- agent-skills: fin -->"
+  SN_MARCA_INICIO="<!-- vibe-coding-skills: inicio (bloque generado, no editar) -->"
+  SN_MARCA_FIN="<!-- vibe-coding-skills: fin -->"
+  # Marcas de versiones anteriores: se reconocen al reescribir el bloque, para
+  # no dejar dos índices en el archivo de quien ya lo tenía instalado.
+  SN_MARCA_INICIO_VIEJA="<!-- agent-skills: inicio (bloque generado, no editar) -->"
+  SN_MARCA_FIN_VIEJA="<!-- agent-skills: fin -->"
   SN_COPIADOS=0
   SN_OMITIDOS=0
   SN_TEMPORAL=""
@@ -311,7 +324,7 @@ modo_sin_node() {
   SN_DESTINO="${1:-}"
   ORIGEN_SKILLS=""
 
-  titulo "agent-skills — instalación sin Node"
+  titulo "Vibe Coding Skills — instalación sin Node"
   printf '  Se copiarán todas las skills; no hace falta Node, npm ni git.\n'
 
   sn_obtener_fuente || return 1
@@ -344,7 +357,7 @@ modo_sin_node() {
   case " $SN_AMBITOS " in *" proyecto "*) printf '    Carpeta:      %s\n' "$SN_DESTINO" ;; esac
   printf '    Herramientas:%s\n' "$(printf ' %s' $SN_ENTORNOS)"
 
-  SN_LISTA="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/agent-skills-lista")"
+  SN_LISTA="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/vibe-coding-skills-lista")"
 
   local skill base entorno ambito
   for ambito in $SN_AMBITOS; do

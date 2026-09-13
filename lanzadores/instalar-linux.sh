@@ -1,5 +1,5 @@
 #!/bin/bash
-# Lanzador para Linux.
+# Lanzador de Vibe Coding Skills para Linux.
 #
 # Descarga este archivo y ábrelo desde tu explorador de archivos con "Ejecutar
 # como programa" (o "Ejecutar en un terminal"). Si tu escritorio no ofrece esa
@@ -10,7 +10,7 @@
 
 cd "$(dirname "$0")" || exit 1
 
-REPO_RAW="${AGENT_SKILLS_RAW:-https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main}"
+REPO_RAW="${VIBE_SKILLS_RAW:-${AGENT_SKILLS_RAW:-https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main}}"
 
 # Si el escritorio lo abre sin terminal, no habría dónde mostrar el menú ni
 # dónde responder: lo relanzamos dentro de un emulador de terminal.
@@ -27,7 +27,7 @@ if [ ! -t 0 ] || [ ! -t 1 ]; then
   # quedará registrado si alguien mira la salida.
 fi
 
-printf '\n  agent-skills — instalador para Linux\n'
+printf '\n  Vibe Coding Skills — instalador para Linux\n'
 printf '  Se abrirá un menú para elegir las skills y la carpeta de tu proyecto.\n\n'
 
 descargar() {
@@ -36,7 +36,7 @@ descargar() {
   return 127
 }
 
-TEMPORAL="${TMPDIR:-/tmp}/agent-skills-install.sh"
+TEMPORAL="${TMPDIR:-/tmp}/vibe-coding-skills-install.sh"
 
 if ! descargar "$REPO_RAW/install.sh" "$TEMPORAL"; then
   printf '\n  No se pudo descargar el instalador.\n'

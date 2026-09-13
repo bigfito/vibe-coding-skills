@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Punto de entrada de agent-skills.
+ * Punto de entrada de Vibe Coding Skills.
  *
  * Este archivo se mantiene deliberadamente en CommonJS y con sintaxis antigua
  * (sin arrow functions, sin optional chaining, sin import estático) para que
@@ -31,11 +31,19 @@ var c = pre.colores;
 
 // ------------------------------------------------------------------ opciones
 
+/*
+ * Las variables de entorno se llaman VIBE_SKILLS_*; los nombres antiguos
+ * AGENT_SKILLS_* se siguen aceptando para no romper a quien ya los usaba.
+ */
+function variable(nombre) {
+  return process.env['VIBE_SKILLS_' + nombre] || process.env['AGENT_SKILLS_' + nombre] || '';
+}
+
 function leerOpciones(args) {
   return {
     check: args.indexOf('--check') !== -1 || args.indexOf('--doctor') !== -1,
-    yes: args.indexOf('--yes') !== -1 || args.indexOf('-y') !== -1 || process.env.AGENT_SKILLS_ASSUME_YES === '1',
-    noInstalar: args.indexOf('--no-install') !== -1 || process.env.AGENT_SKILLS_NO_INSTALL === '1',
+    yes: args.indexOf('--yes') !== -1 || args.indexOf('-y') !== -1 || variable('ASSUME_YES') === '1',
+    noInstalar: args.indexOf('--no-install') !== -1 || variable('NO_INSTALL') === '1',
     dryRun: args.indexOf('--dry-run') !== -1,
     help: args.indexOf('--help') !== -1 || args.indexOf('-h') !== -1
   };
@@ -93,7 +101,7 @@ function main() {
   // pero no toca el sistema. Comprobar nunca instala.
   if (o.check) {
     console.log('');
-    console.log('  ' + c.bold('agent-skills') + ' instala skills (guías de especialista) para tu asistente de IA.');
+    console.log('  ' + c.bold('Vibe Coding Skills') + ' instala skills (guías de especialista) para tu asistente de IA.');
     console.log('  ' + c.dim('Esta comprobación solo mira tu sistema: no instala ni cambia nada.'));
     var estado = pre.diagnostico();
     var hayAsistente = informarAsistentes();

@@ -1,5 +1,5 @@
 <#
-  Arranque de agent-skills para Windows (PowerShell 5.1 o superior).
+  Arranque de Vibe Coding Skills para Windows (PowerShell 5.1 o superior).
 
     irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
 
@@ -14,24 +14,36 @@
     --sin-node     copia las skills sin Node, sin instalar nada en el sistema
     --global       instala en la carpeta personal: sirve para todos los proyectos
     --local        instala solo en el proyecto actual
-                   (con `irm ... | iex`, que no admite argumentos, usa en su
-                    lugar la variable de entorno AGENT_SKILLS_CHECK=1)
     -y, --yes      instala los requisitos que falten sin preguntar
     --no-install   nunca instala nada: solo dice qué falta y cómo instalarlo
+
+  Con `irm ... | iex`, que no admite argumentos, usa las variables de entorno
+  equivalentes: VIBE_SKILLS_CHECK, VIBE_SKILLS_SIN_NODE, VIBE_SKILLS_AMBITO,
+  VIBE_SKILLS_ASSUME_YES y VIBE_SKILLS_NO_INSTALL.
   Cualquier otra opción se pasa tal cual al instalador (--all, --envs=..., etc.).
 #>
 
 $ErrorActionPreference = 'Stop'
 $NodeMinimo = 18
-$Repo = if ($env:AGENT_SKILLS_REPO) { $env:AGENT_SKILLS_REPO } else { 'github:bigfito/vibe-coding-skills' }
+# Las variables se llaman VIBE_SKILLS_*; los nombres antiguos AGENT_SKILLS_*
+# se siguen aceptando para no romper a quien ya los tenga en un script.
+function Get-VarEntorno($nombre, $porDefecto = '') {
+    $valor = [System.Environment]::GetEnvironmentVariable("VIBE_SKILLS_$nombre")
+    if (-not $valor) { $valor = [System.Environment]::GetEnvironmentVariable("AGENT_SKILLS_$nombre") }
+    if ($valor) { return $valor }
+    return $porDefecto
+}
 
-$AsumirSi = ($env:AGENT_SKILLS_ASSUME_YES -eq '1')
-$SinInstalar = ($env:AGENT_SKILLS_NO_INSTALL -eq '1')
-$SoloComprobar = ($env:AGENT_SKILLS_CHECK -eq '1')
-$SinNode = ($env:AGENT_SKILLS_SIN_NODE -eq '1')
+$Repo = Get-VarEntorno 'REPO' 'github:bigfito/vibe-coding-skills'
+
+$AsumirSi = ((Get-VarEntorno 'ASSUME_YES') -eq '1')
+$SinInstalar = ((Get-VarEntorno 'NO_INSTALL') -eq '1')
+$SoloComprobar = ((Get-VarEntorno 'CHECK') -eq '1')
+$SinNode = ((Get-VarEntorno 'SIN_NODE') -eq '1')
 $SnAmbitos = @()
-if ($env:AGENT_SKILLS_AMBITO) { $SnAmbitos = $env:AGENT_SKILLS_AMBITO -split '[ ,]+' | Where-Object { $_ } }
-$RawBase = if ($env:AGENT_SKILLS_RAW) { $env:AGENT_SKILLS_RAW } else { 'https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main' }
+$Ambito = Get-VarEntorno 'AMBITO'
+if ($Ambito) { $SnAmbitos = $Ambito -split '[ ,]+' | Where-Object { $_ } }
+$RawBase = Get-VarEntorno 'RAW' 'https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main'
 $global:SnAqui = if ($PSScriptRoot) { $PSScriptRoot } else { '' }
 $ArgsInstalador = @()
 foreach ($a in $args) {
@@ -51,7 +63,7 @@ foreach ($a in $args) {
 
 # El ambito pedido por variable de entorno se convierte en bandera, para que
 # llegue tambien al instalador con Node y no solo al modo sin Node.
-if ($env:AGENT_SKILLS_AMBITO) {
+if ($Ambito) {
     if ($SnAmbitos -contains 'global' -and -not ($ArgsInstalador -contains '--global')) { $ArgsInstalador += '--global' }
     if ($SnAmbitos -contains 'proyecto' -and -not ($ArgsInstalador -contains '--local')) { $ArgsInstalador += '--local' }
 }
@@ -129,7 +141,7 @@ function Import-SinNode {
         $local = Join-Path $global:SnAqui 'lib\sin-node.ps1'
         if (Test-Path $local) { . $local; return $true }
     }
-    $temporal = Join-Path ([System.IO.Path]::GetTempPath()) 'agent-skills-sin-node.ps1'
+    $temporal = Join-Path ([System.IO.Path]::GetTempPath()) 'vibe-coding-skills-sin-node.ps1'
     try {
         Invoke-WebRequest -UseBasicParsing "$RawBase/lib/sin-node.ps1" -OutFile $temporal
         . $temporal
@@ -210,7 +222,7 @@ function Confirmar($pregunta) {
 
 # -------------------------------------------------------------------- arranque
 
-Escribe-Titulo "agent-skills - comprobando el entorno"
+Escribe-Titulo "Vibe Coding Skills - comprobando el entorno"
 Write-Host "  Sistema: Windows $([System.Environment]::OSVersion.Version.ToString())"
 if ($Gestor) { Write-Host "  Gestor:  $($Gestor.Nombre)" }
 else { Write-Host "  Gestor:  ninguno conocido" -ForegroundColor Yellow }

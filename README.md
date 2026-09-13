@@ -87,7 +87,7 @@ Cuatro programas: **Node.js 18+**, **npm**, **npx** y **git**. 🙌 **No tienes 
 **🪟 Windows (PowerShell)**
 
 ```powershell
-$env:AGENT_SKILLS_CHECK=1; irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
+$env:VIBE_SKILLS_CHECK=1; irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
 ```
 
 **🍎 macOS · 🐧 Linux**
@@ -132,7 +132,7 @@ curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/ins
 ```
 
 ```powershell
-$env:AGENT_SKILLS_SIN_NODE=1; irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
+$env:VIBE_SKILLS_SIN_NODE=1; irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
 ```
 
 Descarga las skills, te pregunta dónde las quieres y las copia. **Nada más.** Y si dices que **no** a instalar Node durante la instalación normal, el propio instalador te ofrece este camino.
@@ -187,7 +187,7 @@ Las cuatro documentan su carpeta personal de forma distinta:
 - 🚀 **Antigravity** — igual: las reglas van a `~/.gemini/antigravity/` y el índice a `~/.gemini/AGENTS.md`.
 
 > [!NOTE]
-> El índice va entre marcas (`<!-- agent-skills: inicio -->` … `<!-- agent-skills: fin -->`). Se reescribe entero en cada instalación y **nunca toca lo que hayas escrito alrededor**.
+> El índice va entre marcas (`<!-- vibe-coding-skills: inicio -->` … `<!-- vibe-coding-skills: fin -->`). Se reescribe entero en cada instalación y **nunca toca lo que hayas escrito alrededor**.
 
 </details>
 
@@ -364,7 +364,7 @@ Si instalaste `solution-architect`, en lugar de lanzarse a escribir código debe
 ## 7. 🔧 Mantenimiento
 
 - 🔄 **Actualizar:** repite el paso 2 añadiendo `--force`, para que reemplace los archivos anteriores.
-- 🗑️ **Quitar las skills:** borra las carpetas de la tabla de [¿Global o por proyecto?](#4--global-o-por-proyecto). No hay desinstalador porque no hace falta: solo son archivos de texto. Si las instalaste globalmente, borra además el bloque entre `<!-- agent-skills: inicio -->` y `<!-- agent-skills: fin -->` de `~/.junie/AGENTS.md` y `~/.gemini/AGENTS.md`.
+- 🗑️ **Quitar las skills:** borra las carpetas de la tabla de [¿Global o por proyecto?](#4--global-o-por-proyecto). No hay desinstalador porque no hace falta: solo son archivos de texto. Si las instalaste globalmente, borra además el bloque entre `<!-- vibe-coding-skills: inicio -->` y `<!-- vibe-coding-skills: fin -->` de `~/.junie/AGENTS.md` y `~/.gemini/AGENTS.md`.
 - 👥 **Trabajo en equipo:** si tu proyecto usa git, sube las carpetas al repositorio (`git add .claude .cursor .junie .agents`). Así todo el equipo obtiene el mismo comportamiento sin instalar nada.
 
 ---
@@ -405,11 +405,14 @@ npx github:bigfito/vibe-coding-skills --all --dry-run                       # si
 
 | Variable | Equivale a |
 |---|---|
-| `AGENT_SKILLS_ASSUME_YES=1` | `--yes` |
-| `AGENT_SKILLS_NO_INSTALL=1` | `--no-install` |
-| `AGENT_SKILLS_CHECK=1` | `--check` |
-| `AGENT_SKILLS_SIN_NODE=1` | `--sin-node` |
-| `AGENT_SKILLS_AMBITO=global` | `--global` |
+| `VIBE_SKILLS_ASSUME_YES=1` | `--yes` |
+| `VIBE_SKILLS_NO_INSTALL=1` | `--no-install` |
+| `VIBE_SKILLS_CHECK=1` | `--check` |
+| `VIBE_SKILLS_SIN_NODE=1` | `--sin-node` |
+| `VIBE_SKILLS_AMBITO=global` | `--global` |
+
+> [!NOTE]
+> Antes se llamaban `AGENT_SKILLS_*`. Esos nombres **siguen funcionando**, así que no hace falta cambiar nada de lo que ya tuvieras escrito.
 
 </details>
 

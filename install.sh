@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Arranque de agent-skills para macOS, Linux y WSL.
+# Arranque de Vibe Coding Skills para macOS, Linux y WSL.
 #
 #   curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.sh | bash
 #
@@ -20,17 +20,24 @@
 
 set -u
 
-REPO="${AGENT_SKILLS_REPO:-github:bigfito/vibe-coding-skills}"
+# Las variables se llaman VIBE_SKILLS_*; los nombres antiguos AGENT_SKILLS_*
+# se siguen aceptando para no romper a quien ya los tenga en un script.
+var() { # var NOMBRE POR_DEFECTO  → valor de VIBE_SKILLS_NOMBRE, AGENT_SKILLS_NOMBRE o el dado
+  local nuevo="VIBE_SKILLS_$1" viejo="AGENT_SKILLS_$1"
+  printf '%s' "${!nuevo:-${!viejo:-$2}}"
+}
+
+REPO="$(var REPO github:bigfito/vibe-coding-skills)"
 NODE_MINIMO=18
 
-RAW_BASE="${AGENT_SKILLS_RAW:-https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main}"
+RAW_BASE="$(var RAW https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main)"
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "")"
 
-SIN_NODE="${AGENT_SKILLS_SIN_NODE:-0}"
-SN_AMBITOS="${AGENT_SKILLS_AMBITO:-}"
-ASUMIR_SI="${AGENT_SKILLS_ASSUME_YES:-0}"
-SIN_INSTALAR="${AGENT_SKILLS_NO_INSTALL:-0}"
-SOLO_COMPROBAR="${AGENT_SKILLS_CHECK:-0}"
+SIN_NODE="$(var SIN_NODE 0)"
+SN_AMBITOS="$(var AMBITO "")"
+ASUMIR_SI="$(var ASSUME_YES 0)"
+SIN_INSTALAR="$(var NO_INSTALL 0)"
+SOLO_COMPROBAR="$(var CHECK 0)"
 ARGS_INSTALADOR=()
 
 for arg in "$@"; do
@@ -95,7 +102,7 @@ cargar_sin_node() {
     SN_AQUI="$AQUI"
     return 0
   fi
-  local temporal="${TMPDIR:-/tmp}/agent-skills-sin-node.sh"
+  local temporal="${TMPDIR:-/tmp}/vibe-coding-skills-sin-node.sh"
   if descargar "$RAW_BASE/lib/sin-node.sh" "$temporal"; then
     # shellcheck disable=SC1090
     . "$temporal"
@@ -297,7 +304,7 @@ confirmar() {
 
 # -------------------------------------------------------------------- arranque
 
-titulo "agent-skills — comprobando el entorno"
+titulo "Vibe Coding Skills — comprobando el entorno"
 printf '  Sistema: %s\n' "$SO"
 
 elegir_gestor

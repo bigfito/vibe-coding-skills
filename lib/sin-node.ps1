@@ -1,6 +1,6 @@
 <#
-  Modo sin Node para Windows: instala las skills copiando archivos, sin Node,
-  npm ni git.
+  Modo sin Node de Vibe Coding Skills para Windows: instala las skills
+  copiando archivos, sin Node, npm ni git.
 
   Las skills son archivos de texto; Node solo hace falta para el menú. Cuando
   alguien no puede o no quiere instalar Node, este camino descarga el
@@ -17,8 +17,9 @@ $global:SnCopiados = 0
 $global:SnOmitidos = 0
 
 function global:Get-SnFuente {
-    # Una copia local (repositorio clonado o AGENT_SKILLS_SRC) evita descargar.
-    $local = $env:AGENT_SKILLS_SRC
+    # Una copia local (repositorio clonado o VIBE_SKILLS_SRC) evita descargar.
+    $local = $env:VIBE_SKILLS_SRC
+    if (-not $local) { $local = $env:AGENT_SKILLS_SRC }
     if (-not $local -and $global:SnAqui -and (Test-Path (Join-Path $global:SnAqui 'skills'))) {
         $local = $global:SnAqui
     }
@@ -27,9 +28,10 @@ function global:Get-SnFuente {
         return $local
     }
 
-    $zip = if ($env:AGENT_SKILLS_ZIP) { $env:AGENT_SKILLS_ZIP }
+    $zip = if ($env:VIBE_SKILLS_ZIP) { $env:VIBE_SKILLS_ZIP }
+           elseif ($env:AGENT_SKILLS_ZIP) { $env:AGENT_SKILLS_ZIP }
            else { 'https://codeload.github.com/bigfito/vibe-coding-skills/zip/refs/heads/main' }
-    $temporal = Join-Path ([System.IO.Path]::GetTempPath()) ("agent-skills-" + [guid]::NewGuid().ToString('N'))
+    $temporal = Join-Path ([System.IO.Path]::GetTempPath()) ("vibe-coding-skills-" + [guid]::NewGuid().ToString('N'))
     $archivo = "$temporal.zip"
 
     Write-Host "`n  Descargando las skills..."
@@ -172,7 +174,7 @@ function global:Write-SnIndice($entorno, $origen) {
 
     $lineas = @(
         $global:SnMarcaInicio,
-        '## Skills de agent-skills instaladas globalmente',
+        '## Skills de Vibe Coding Skills instaladas globalmente',
         '',
         "Estas guias estan en ``$carpeta``. Cuando la tarea encaje con alguna,",
         'lee sus archivos antes de responder:',
@@ -189,10 +191,17 @@ function global:Write-SnIndice($entorno, $origen) {
 
     $contenido = ''
     if (Test-Path $archivo) { $contenido = Get-Content -Raw $archivo }
+    # Se busca el bloque con las marcas actuales y, si no esta, con las antiguas.
     $inicio = $contenido.IndexOf($global:SnMarcaInicio)
     $fin = $contenido.IndexOf($global:SnMarcaFin)
+    $largoFin = $global:SnMarcaFin.Length
+    if ($inicio -lt 0) {
+        $inicio = $contenido.IndexOf($global:SnMarcaInicioVieja)
+        $fin = $contenido.IndexOf($global:SnMarcaFinVieja)
+        $largoFin = $global:SnMarcaFinVieja.Length
+    }
     if ($inicio -ge 0 -and $fin -gt $inicio) {
-        $nuevo = $contenido.Substring(0, $inicio) + $bloque + $contenido.Substring($fin + $global:SnMarcaFin.Length)
+        $nuevo = $contenido.Substring(0, $inicio) + $bloque + $contenido.Substring($fin + $largoFin)
     } elseif ($contenido.Trim()) {
         $nuevo = $contenido.TrimEnd() + "`n`n" + $bloque + "`n"
     } else {
@@ -271,10 +280,14 @@ function global:Invoke-ModoSinNode {
     $global:SnForzar = [bool]$Forzar
     $global:SnCopiados = 0
     $global:SnOmitidos = 0
-    $global:SnMarcaInicio = '<!-- agent-skills: inicio (bloque generado, no editar) -->'
-    $global:SnMarcaFin = '<!-- agent-skills: fin -->'
+    $global:SnMarcaInicio = '<!-- vibe-coding-skills: inicio (bloque generado, no editar) -->'
+    $global:SnMarcaFin = '<!-- vibe-coding-skills: fin -->'
+    # Marcas de versiones anteriores: se reconocen al reescribir el bloque, para
+    # no dejar dos indices en el archivo de quien ya lo tenia instalado.
+    $global:SnMarcaInicioVieja = '<!-- agent-skills: inicio (bloque generado, no editar) -->'
+    $global:SnMarcaFinVieja = '<!-- agent-skills: fin -->'
 
-    Escribe-Titulo "agent-skills - instalacion sin Node"
+    Escribe-Titulo "Vibe Coding Skills - instalacion sin Node"
     Write-Host "  Se copiaran todas las skills; no hace falta Node, npm ni git."
 
     $origen = Get-SnFuente

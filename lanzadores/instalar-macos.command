@@ -1,5 +1,5 @@
 #!/bin/bash
-# Lanzador de doble clic para macOS.
+# Lanzador de doble clic de Vibe Coding Skills para macOS.
 #
 # Descarga este archivo y haz doble clic. macOS abre la Terminal y ejecuta el
 # instalador: no hace falta escribir ningún comando.
@@ -10,9 +10,9 @@
 # Trabajar en la carpeta donde está el lanzador y no en la que abra Finder.
 cd "$(dirname "$0")" || exit 1
 
-REPO_RAW="${AGENT_SKILLS_RAW:-https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main}"
+REPO_RAW="${VIBE_SKILLS_RAW:-${AGENT_SKILLS_RAW:-https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main}}"
 
-printf '\n  agent-skills — instalador para macOS\n'
+printf '\n  Vibe Coding Skills — instalador para macOS\n'
 printf '  Se abrirá un menú para elegir las skills y la carpeta de tu proyecto.\n\n'
 
 if ! command -v curl >/dev/null 2>&1; then
@@ -25,7 +25,7 @@ fi
 
 # El instalador se ejecuta con bash y con la entrada conectada al terminal, para
 # que sus preguntas (permiso de instalación, menús) funcionen con normalidad.
-TEMPORAL="${TMPDIR:-/tmp}/agent-skills-install.sh"
+TEMPORAL="${TMPDIR:-/tmp}/vibe-coding-skills-install.sh"
 curl -fsSL "$REPO_RAW/install.sh" -o "$TEMPORAL"
 estado=$?
 

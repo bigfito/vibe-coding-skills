@@ -1,10 +1,10 @@
 {
-  "name": "agent-skills",
+  "name": "vibe-coding-skills",
   "version": "1.0.0",
-  "description": "Suite de skills de agente (arquitectura, gestión de proyectos, desarrollo Java/Python y nube GCP/AWS) para Claude Code, Cursor, IntelliJ IDEA Ultimate (Junie) y Google Antigravity.",
+  "description": "Vibe Coding Skills: suite de skills de agente (arquitectura, gestión de proyectos, desarrollo Java/Python y nube GCP/AWS) para Claude Code, Cursor, IntelliJ IDEA Ultimate (Junie) y Google Antigravity.",
   "type": "module",
   "bin": {
-    "agent-skills": "bin/agent-skills.cjs"
+    "vibe-coding-skills": "bin/vibe-coding-skills.cjs"
   },
   "files": [
     "bin/",
@@ -18,6 +18,7 @@
     "node": ">=18"
   },
   "keywords": [
+    "vibe-coding",
     "claude-code",
     "cursor",
     "junie",
@@ -31,7 +32,7 @@
     "url": "git+https://github.com/bigfito/vibe-coding-skills.git"
   },
   "scripts": {
-    "check": "node bin/agent-skills.cjs --check",
+    "check": "node bin/vibe-coding-skills.cjs --check",
     "test": "bash tests/run-tests.sh"
   }
 }
