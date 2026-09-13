@@ -12,6 +12,8 @@ Funcionan en cuatro herramientas: **Claude Code**, **Cursor**, **IntelliJ IDEA U
 
 El instalador se encarga solo de los requisitos: detecta tu sistema operativo, comprueba si tienes lo necesario y, si te falta algo, **te pide permiso y lo instala por ti**.
 
+Y las instala donde tú quieras: **globalmente** (en tu carpeta personal, para que estén disponibles en todos tus proyectos) o **solo en un proyecto**. Por defecto propone la global.
+
 ---
 
 # Instalación paso a paso
@@ -130,6 +132,29 @@ Números separados por coma (p. ej. 1,3,5-7) o Enter para todas:
 
 Luego preguntará **en qué herramientas** instalarlas. Las que ya usas en ese proyecto aparecen marcadas como *(detectado en el proyecto)*. Si no sabes qué elegir, pulsa Enter para instalarlas en todas: no estorba tener las cuatro.
 
+Después te dirá **qué herramientas encontró instaladas en tu computador** y a qué carpetas iría cada cosa, antes de tocar nada:
+
+```
+Herramientas detectadas en este computador
+  Claude Code                      detectada
+    global:   ~/.claude
+    proyecto: .claude
+  Cursor                           no detectada
+    global:   ~/.cursor
+    proyecto: .cursor
+```
+
+Y preguntará **dónde instalarlas**:
+
+```
+¿Dónde quieres instalarlas?
+   1. Global — en tu carpeta personal, disponibles en todos tus proyectos
+   2. Solo en este proyecto
+   3. En los dos sitios
+```
+
+Pulsa Enter para la global, que es la que sirve para cualquier proyecto que empieces después.
+
 Por último pedirá confirmación. Escribe `s` y pulsa Enter.
 
 ## Paso 5. Comprueba que funcionó
@@ -142,6 +167,45 @@ Versiona estas carpetas en git para que el equipo comparta el mismo comportamien
 ```
 
 Eso es todo. Abre tu asistente y pídele algo relacionado: por ejemplo, *"quiero construir una aplicación para gestionar inventario"*. Si instalaste `solution-architect`, en lugar de lanzarse a escribir código debería empezar haciéndote preguntas.
+
+---
+
+# Global o por proyecto
+
+Las skills se pueden instalar en dos sitios, y puedes usar los dos a la vez:
+
+| | **Global** | **Por proyecto** |
+|---|---|---|
+| Dónde | Tu carpeta personal | La carpeta del proyecto |
+| Para qué | Todos tus proyectos, también los que empieces mañana | Solo ese proyecto |
+| Se comparte con tu equipo | No | Sí, si versionas las carpetas en git |
+| Cómo pedirlo | `--global` | `--local` |
+
+**Lo normal es instalarlas globalmente**: así el asistente trabaja como especialista en cualquier carpeta donde lo abras. La instalación por proyecto tiene sentido cuando quieres que tu equipo reciba las mismas skills al clonar el repositorio, o cuando un proyecto necesita una versión distinta.
+
+Antes de instalar nada, el instalador **comprueba qué herramientas tienes** en el computador (busca sus carpetas de configuración y sus aplicaciones) y te dice a qué carpeta iría cada cosa. Si alguna no está instalada, te lo dice y puedes instalar igual: la carpeta queda lista para cuando la instales.
+
+## Dónde queda cada cosa
+
+| Herramienta | Global | Por proyecto |
+|-------------|--------|--------------|
+| Claude Code | `~/.claude/skills/` y `~/.claude/agents/` | `.claude/skills/` y `.claude/agents/` |
+| Cursor | `~/.cursor/rules/` | `.cursor/rules/` |
+| IntelliJ IDEA Ultimate (Junie) | `~/.junie/rules/` + índice en `~/.junie/AGENTS.md` | `.junie/rules/` |
+| Google Antigravity | `~/.gemini/antigravity/` + índice en `~/.gemini/AGENTS.md` | `.agents/rules/` y `.agents/workflows/` |
+
+En Windows, `~` es tu carpeta de usuario (`C:\Users\TuNombre`). Si usas `CLAUDE_CONFIG_DIR`, Claude Code se instala ahí en lugar de en `~/.claude`.
+
+## Un detalle por herramienta
+
+Las cuatro documentan su ámbito personal de forma distinta, así que conviene saber qué esperar:
+
+- **Claude Code** documenta `~/.claude/skills` como carpeta personal: lo que se instala ahí se carga en todas tus sesiones de esa máquina. Nada más que hacer.
+- **Cursor** documenta las reglas globales como *User Rules*, en Ajustes → Rules, que es texto en la configuración y no archivos. Las versiones que leen `~/.cursor/rules` tomarán las skills de ahí; si la tuya no lo hace, copia el contenido de la regla que te interese en Ajustes.
+- **Junie** lee sus guías globales de `~/.junie/AGENTS.md`. Las reglas se copian a `~/.junie/rules/` y en ese archivo se añade **un índice** que las señala, para que Junie sepa que están y las lea cuando la tarea lo pida.
+- **Google Antigravity** lee las suyas de `~/.gemini/AGENTS.md`, y funciona igual: las reglas van a `~/.gemini/antigravity/` y el índice se añade a ese archivo.
+
+El índice va entre marcas (`<!-- agent-skills: inicio -->` … `<!-- agent-skills: fin -->`). Se reescribe entero en cada instalación y **nunca toca lo que hayas escrito alrededor**.
 
 ---
 
@@ -177,7 +241,7 @@ curl -fsSL https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/ins
 $env:AGENT_SKILLS_SIN_NODE=1; irm https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main/install.ps1 | iex
 ```
 
-Descarga las skills, te pregunta la carpeta y las herramientas, y copia los archivos. Nada más. Y si estás en medio de la instalación normal y dices que **no** a instalar Node, el propio instalador te ofrece este camino.
+Descarga las skills, te pregunta el ámbito (global o proyecto), la carpeta y las herramientas, y copia los archivos. Nada más. Y si estás en medio de la instalación normal y dices que **no** a instalar Node, el propio instalador te ofrece este camino.
 
 La diferencia con la instalación normal: el menú es más sencillo, porque instala **todas** las skills (en la normal puedes elegir cuáles). El resultado en tu proyecto es idéntico, archivo por archivo.
 
@@ -221,7 +285,7 @@ Te dice qué tienes, qué te falta y con qué comando lo instalaría, y termina 
 
 **Actualizar a la última versión:** repite el paso 3 añadiendo `--force` al final, para que reemplace los archivos anteriores.
 
-**Quitar las skills:** se borran las carpetas que se crearon. No hay desinstalador porque no hace falta: solo son archivos de texto dentro de tu proyecto.
+**Quitar las skills:** se borran las carpetas que se crearon (las de la tabla de [Global o por proyecto](#global-o-por-proyecto)). No hay desinstalador porque no hace falta: solo son archivos de texto. Si las instalaste globalmente, borra además el bloque entre `<!-- agent-skills: inicio -->` y `<!-- agent-skills: fin -->` de `~/.junie/AGENTS.md` y `~/.gemini/AGENTS.md`.
 
 **Trabajo en equipo:** si tu proyecto usa git, guarda estas carpetas en el repositorio (`git add .claude .cursor .junie .agents`). Así todo el equipo obtiene el mismo comportamiento del asistente sin instalar nada.
 
@@ -245,12 +309,7 @@ Puedes instalar solo las que te sirvan. Si no trabajas con Java, no instales `ja
 
 # Dónde queda instalado cada archivo
 
-| Herramienta | Carpeta que se crea |
-|-------------|---------------------|
-| Claude Code | `.claude/skills/` y los agentes en `.claude/agents/` |
-| Cursor | `.cursor/rules/` |
-| IntelliJ IDEA Ultimate (Junie) | `.junie/rules/` |
-| Google Antigravity | `.agents/rules/` y los flujos en `.agents/workflows/` |
+Las carpetas exactas de cada herramienta, en los dos ámbitos, están en la tabla de la sección [Global o por proyecto](#global-o-por-proyecto).
 
 Son carpetas ocultas (empiezan por punto). Para verlas: en macOS pulsa **⌘ + Shift + .** en Finder; en Windows activa **Ver → Elementos ocultos**.
 
@@ -263,7 +322,9 @@ Dos detalles: en Antigravity las guías largas se instalan partidas en varios ar
 Si prefieres saltarte el menú, o automatizarlo:
 
 ```bash
-npx github:bigfito/vibe-coding-skills --all --envs=claude,cursor --yes
+npx github:bigfito/vibe-coding-skills --all --envs=claude,cursor --yes          # global
+npx github:bigfito/vibe-coding-skills --all --local --yes                      # solo este proyecto
+npx github:bigfito/vibe-coding-skills --all --scope=global,proyecto --yes      # los dos
 npx github:bigfito/vibe-coding-skills --skills=gcp-expert,project-manager --envs=claude --yes
 npx github:bigfito/vibe-coding-skills --all --dry-run      # simula, no escribe nada
 ```
@@ -272,6 +333,9 @@ npx github:bigfito/vibe-coding-skills --all --dry-run      # simula, no escribe 
 |--------|--------|
 | `--skills=a,b` | Instala solo esas skills |
 | `--dir=ruta` | Carpeta del proyecto donde instalar (por defecto, la actual) |
+| `--global` | Instala en tu carpeta personal: sirve para todos tus proyectos (por defecto sin menú) |
+| `--local` | Instala solo en este proyecto |
+| `--scope=a,b` | Ámbitos: `global`, `proyecto`; indica los dos para instalar en ambos |
 | `--envs=a,b` | Destinos: `claude`, `cursor`, `junie`, `antigravity` |
 | `--all` | Todas las skills |
 | `--yes`, `-y` | Sin pedir confirmación |

@@ -83,27 +83,65 @@ sn_copiar_arbol() {
   done < "$SN_LISTA"
 }
 
-# Instala una skill en un entorno, con el mismo reparto de carpetas que usa el
-# instalador de Node.
+# Carpeta base de cada herramienta según el ámbito:
+#   global   — la carpeta personal, para todos los proyectos.
+#   proyecto — dentro del proyecto elegido.
+sn_base() {
+  local entorno="$1" ambito="$2"
+  if [ "$ambito" = "global" ]; then
+    case "$entorno" in
+      claude) printf '%s' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}" ;;
+      cursor) printf '%s' "$HOME/.cursor" ;;
+      junie) printf '%s' "$HOME/.junie" ;;
+      antigravity) printf '%s' "$HOME/.gemini/antigravity" ;;
+    esac
+  else
+    case "$entorno" in
+      claude) printf '%s' "$SN_DESTINO/.claude" ;;
+      cursor) printf '%s' "$SN_DESTINO/.cursor" ;;
+      junie) printf '%s' "$SN_DESTINO/.junie" ;;
+      antigravity) printf '%s' "$SN_DESTINO/.agents" ;;
+    esac
+  fi
+}
+
+# ¿Hay rastro de que la herramienta esté instalada en este computador?
+sn_detectar() {
+  local entorno="$1"
+  case "$entorno" in
+    claude) [ -d "$HOME/.claude" ] || [ -f "$HOME/.claude.json" ] || hay claude ;;
+    cursor) [ -d "$HOME/.cursor" ] || [ -d "/Applications/Cursor.app" ] \
+            || [ -d "$HOME/Library/Application Support/Cursor" ] || [ -d "$HOME/.config/Cursor" ] ;;
+    junie)  [ -d "$HOME/.junie" ] || [ -d "$HOME/Library/Application Support/JetBrains" ] \
+            || [ -d "$HOME/.config/JetBrains" ] ;;
+    antigravity) [ -d "$HOME/.gemini" ] || [ -d "$HOME/.antigravity" ] \
+            || [ -d "/Applications/Antigravity.app" ] || [ -d "$HOME/.config/Antigravity" ] ;;
+    *) return 1 ;;
+  esac
+}
+
+# Instala una skill en un entorno y ámbito, con el mismo reparto de carpetas que
+# usa el instalador de Node.
 sn_instalar_skill() {
-  local base="$1" skill="$2" entorno="$3" destino="$4" archivo nombre
+  local base="$1" skill="$2" entorno="$3" ambito="$4" archivo raiz origen carpeta flujos
+  raiz="$(sn_base "$entorno" "$ambito")"
 
   case "$entorno" in
     claude)
-      sn_copiar "$base/SKILL.md" "$destino/.claude/skills/$skill/SKILL.md"
+      sn_copiar "$base/SKILL.md" "$raiz/skills/$skill/SKILL.md"
       for extra in references assets; do
-        sn_copiar_arbol "$base/$extra" "$destino/.claude/skills/$skill/$extra"
+        sn_copiar_arbol "$base/$extra" "$raiz/skills/$skill/$extra"
       done
       if [ -d "$base/agents" ]; then
         for archivo in "$base"/agents/*; do
           [ -f "$archivo" ] || continue
-          sn_copiar "$archivo" "$destino/.claude/agents/$(basename "$archivo")"
+          sn_copiar "$archivo" "$raiz/agents/$(basename "$archivo")"
         done
       fi
       ;;
     cursor|junie)
-      local origen="$base/dist/$entorno" carpeta
-      [ "$entorno" = "cursor" ] && carpeta="$destino/.cursor/rules" || carpeta="$destino/.junie/rules"
+      origen="$base/dist/$entorno"
+      carpeta="$raiz/rules"
       [ -d "$origen" ] || return 0
       for archivo in "$origen"/*; do
         [ -f "$archivo" ] || continue
@@ -114,23 +152,74 @@ sn_instalar_skill() {
       done
       ;;
     antigravity)
-      local origen="$base/dist/antigravity"
+      origen="$base/dist/antigravity"
+      carpeta="$raiz/rules"
+      [ "$ambito" = "global" ] && flujos="$raiz/global_workflows" || flujos="$raiz/workflows"
       [ -d "$origen" ] || return 0
       for archivo in "$origen"/*; do
         [ -f "$archivo" ] || continue
-        sn_copiar "$archivo" "$destino/.agents/rules/$(basename "$archivo")"
+        sn_copiar "$archivo" "$carpeta/$(basename "$archivo")"
       done
       if [ -d "$origen/workflows" ]; then
         for archivo in "$origen"/workflows/*; do
           [ -f "$archivo" ] || continue
-          sn_copiar "$archivo" "$destino/.agents/workflows/$(basename "$archivo")"
+          sn_copiar "$archivo" "$flujos/$(basename "$archivo")"
         done
       fi
       for extra in references assets; do
-        sn_copiar_arbol "$base/$extra" "$destino/.agents/rules/$skill/$extra"
+        sn_copiar_arbol "$base/$extra" "$carpeta/$skill/$extra"
       done
       ;;
   esac
+}
+
+# Junie y Antigravity leen sus guías globales de un único archivo: se les añade
+# un bloque con la lista de lo instalado, entre marcas, sin tocar lo demás.
+sn_indice() {
+  local entorno="$1" archivo carpeta bloque temporal
+  case "$entorno" in
+    junie) archivo="$HOME/.junie/AGENTS.md" ;;
+    antigravity) archivo="$HOME/.gemini/AGENTS.md" ;;
+    *) return 0 ;;
+  esac
+  carpeta="$(sn_base "$entorno" global)/rules"
+  [ -d "$carpeta" ] || return 0
+
+  temporal="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/agent-skills-indice")"
+  {
+    printf '%s\n' "$SN_MARCA_INICIO"
+    printf '## Skills de agent-skills instaladas globalmente\n\n'
+    printf 'Estas guías están en `%s`. Cuando la tarea encaje con alguna,\n' "$carpeta"
+    printf 'lee sus archivos antes de responder:\n\n'
+    # Se agrupa por skill, igual que el instalador de Node, para que el índice
+    # diga a qué corresponde cada archivo.
+    for skill_dir in "$ORIGEN_SKILLS"/skills/*; do
+      [ -d "$skill_dir" ] || continue
+      skill_nombre="$(basename "$skill_dir")"
+      archivos=""
+      for archivo_regla in "$carpeta/$skill_nombre"*.md "$carpeta/$skill_nombre"*.mdc; do
+        [ -f "$archivo_regla" ] || continue
+        archivos="${archivos:+$archivos, }\`$archivo_regla\`"
+      done
+      [ -n "$archivos" ] && printf -- '- **%s**: %s\n' "$skill_nombre" "$archivos"
+    done
+    printf '%s\n' "$SN_MARCA_FIN"
+  } > "$temporal"
+
+  if [ -f "$archivo" ] && grep -qF "$SN_MARCA_INICIO" "$archivo"; then
+    # Reemplaza el bloque anterior conservando el resto del archivo.
+    awk -v inicio="$SN_MARCA_INICIO" -v fin="$SN_MARCA_FIN" -v nuevo="$temporal" '
+      $0 == inicio { while ((getline linea < nuevo) > 0) print linea; saltando = 1; next }
+      $0 == fin { saltando = 0; next }
+      !saltando { print }
+    ' "$archivo" > "$temporal.nuevo" && mv "$temporal.nuevo" "$archivo"
+  else
+    mkdir -p "$(dirname "$archivo")"
+    [ -f "$archivo" ] && printf '\n' >> "$archivo"
+    cat "$temporal" >> "$archivo"
+  fi
+  rm -f "$temporal"
+  SN_INDICES="$SN_INDICES $archivo"
 }
 
 # Pregunta la carpeta del proyecto, aceptando que se arrastre hasta la ventana.
@@ -170,6 +259,22 @@ sn_preguntar_carpeta() {
   SN_DESTINO="$(cd "$ruta" 2>/dev/null && pwd || printf '%s' "$ruta")"
 }
 
+# Pregunta el ámbito: global (todos los proyectos) o solo este proyecto.
+sn_preguntar_ambito() {
+  local respuesta
+  printf '\n  %s¿Dónde quieres instalarlas?%s\n' "$B" "$N"
+  printf '    1. Global — en tu carpeta personal, disponibles en todos tus proyectos\n'
+  printf '    2. Solo en este proyecto\n'
+  printf '    3. En los dos sitios\n'
+  printf '\n  %sElige 1, 2 o 3 (Enter para 1): %s' "$D" "$N"
+  if ! read -r respuesta < /dev/tty 2>/dev/null; then printf '\n'; SN_AMBITOS="global"; return 0; fi
+  case "$(printf '%s' "$respuesta" | tr -d '[:space:]')" in
+    2) SN_AMBITOS="proyecto" ;;
+    3) SN_AMBITOS="global proyecto" ;;
+    *) SN_AMBITOS="global" ;;
+  esac
+}
+
 # Pregunta los entornos. Enter = todos.
 sn_preguntar_entornos() {
   local respuesta
@@ -197,9 +302,12 @@ modo_sin_node() {
   SN_AQUI="${SN_AQUI:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)}"
   SN_TARBALL="${AGENT_SKILLS_TARBALL:-https://codeload.github.com/bigfito/vibe-coding-skills/tar.gz/refs/heads/main}"
   SN_FORZAR="${SN_FORZAR:-0}"
+  SN_MARCA_INICIO="<!-- agent-skills: inicio (bloque generado, no editar) -->"
+  SN_MARCA_FIN="<!-- agent-skills: fin -->"
   SN_COPIADOS=0
   SN_OMITIDOS=0
   SN_TEMPORAL=""
+  SN_INDICES=""
   SN_DESTINO="${1:-}"
   ORIGEN_SKILLS=""
 
@@ -208,34 +316,67 @@ modo_sin_node() {
 
   sn_obtener_fuente || return 1
 
-  if [ -z "$SN_DESTINO" ]; then
-    if hay_terminal; then sn_preguntar_carpeta; else SN_DESTINO="$PWD"; fi
+  # Validación previa: qué herramientas hay en este computador.
+  printf '\n  %sHerramientas detectadas en este computador%s\n' "$B" "$N"
+  for entorno in claude cursor junie antigravity; do
+    if sn_detectar "$entorno"; then printf '    %-14s %sdetectada%s\n' "$entorno" "$G" "$N"
+    else printf '    %-14s %sno detectada%s\n' "$entorno" "$Y" "$N"; fi
+  done
+
+  if [ -z "${SN_AMBITOS:-}" ]; then
+    if hay_terminal; then sn_preguntar_ambito; else SN_AMBITOS="global"; fi
   fi
+
+  # La carpeta del proyecto solo hace falta si se instala en el proyecto.
+  case " $SN_AMBITOS " in
+    *" proyecto "*)
+      if [ -z "$SN_DESTINO" ]; then
+        if hay_terminal; then sn_preguntar_carpeta; else SN_DESTINO="$PWD"; fi
+      fi ;;
+    *) SN_DESTINO="${SN_DESTINO:-$PWD}" ;;
+  esac
+
   if hay_terminal && [ -z "${SN_ENTORNOS:-}" ]; then sn_preguntar_entornos; fi
   SN_ENTORNOS="${SN_ENTORNOS:-claude cursor junie antigravity}"
 
   printf '\n  %sSe instalarán%s\n' "$B" "$N"
-  printf '    Carpeta:     %s\n' "$SN_DESTINO"
+  printf '    Ámbito:       %s\n' "$SN_AMBITOS"
+  case " $SN_AMBITOS " in *" proyecto "*) printf '    Carpeta:      %s\n' "$SN_DESTINO" ;; esac
   printf '    Herramientas:%s\n' "$(printf ' %s' $SN_ENTORNOS)"
 
   SN_LISTA="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/agent-skills-lista")"
 
-  local skill base entorno
-  for base in "$ORIGEN_SKILLS"/skills/*; do
-    [ -d "$base" ] || continue
-    skill="$(basename "$base")"
-    for entorno in $SN_ENTORNOS; do
-      sn_instalar_skill "$base" "$skill" "$entorno" "$SN_DESTINO"
+  local skill base entorno ambito
+  for ambito in $SN_AMBITOS; do
+    for base in "$ORIGEN_SKILLS"/skills/*; do
+      [ -d "$base" ] || continue
+      skill="$(basename "$base")"
+      for entorno in $SN_ENTORNOS; do
+        sn_instalar_skill "$base" "$skill" "$entorno" "$ambito"
+      done
     done
   done
+
+  # Índices para las herramientas que leen sus guías globales de un archivo.
+  case " $SN_AMBITOS " in
+    *" global "*)
+      for entorno in $SN_ENTORNOS; do sn_indice "$entorno"; done ;;
+  esac
 
   rm -f "$SN_LISTA"
   [ -n "$SN_TEMPORAL" ] && rm -rf "$SN_TEMPORAL"
 
-  printf '\n  %s✓%s %s archivo(s) instalados en %s\n' "$G" "$N" "$SN_COPIADOS" "$SN_DESTINO"
+  printf '\n  %s✓%s %s archivo(s) instalados.\n' "$G" "$N" "$SN_COPIADOS"
   if [ "$SN_OMITIDOS" -gt 0 ]; then
     printf '  %s! %s ya existían y no se tocaron.%s\n' "$Y" "$SN_OMITIDOS" "$N"
   fi
-  printf '  %sVersiona estas carpetas en git para que el equipo comparta el mismo comportamiento.%s\n\n' "$D" "$N"
+  if [ -n "$SN_INDICES" ]; then
+    printf '  %sSe añadió un índice de las skills en:%s\n' "$D" "$N"
+    for archivo in $SN_INDICES; do printf '    %s%s%s\n' "$D" "$archivo" "$N"; done
+  fi
+  case " $SN_AMBITOS " in
+    *" proyecto "*) printf '  %sVersiona las carpetas del proyecto en git para compartirlas con tu equipo.%s\n' "$D" "$N" ;;
+  esac
+  printf '\n'
   return 0
 }

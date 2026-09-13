@@ -18,6 +18,12 @@ RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
+# La instalación global escribe en la carpeta personal, así que las pruebas
+# corren con un HOME de mentira: nunca deben tocar la del usuario.
+CASA_REAL="$HOME"
+export HOME="$TMP/casa"
+mkdir -p "$HOME"
+
 OK=0
 FALLOS=0
 
@@ -205,13 +211,13 @@ contiene "$salida" "solo una comprobación" "--check gana sobre --yes"
 [ ! -f "$LOG" ] && pasa "--check --yes sigue sin instalar" || falla "--check --yes sigue sin instalar" "$(cat "$LOG")"
 
 # 3b. Con --no-install: informa, da instrucciones manuales y no toca nada.
-salida="$(cd "$PROY_REQ" && sin_git node "$RAIZ/bin/agent-skills.cjs" --all --envs=claude --no-install < /dev/null 2>&1)"
+salida="$(cd "$PROY_REQ" && sin_git node "$RAIZ/bin/agent-skills.cjs" --all --envs=claude --no-install --local < /dev/null 2>&1)"
 contiene "$salida" "--no-install" "respeta --no-install"
 contiene "$salida" "Instálalo a mano" "con --no-install da instrucciones manuales"
 [ ! -f "$LOG" ] && pasa "con --no-install no ejecuta el gestor" || falla "con --no-install no ejecuta el gestor" "$(cat "$LOG")"
 
 # 3c. Sin terminal y sin --yes: no instala nada a espaldas del usuario.
-salida="$(cd "$PROY_REQ" && PATH="$STUB" setsid node "$RAIZ/bin/agent-skills.cjs" --all --envs=claude < /dev/null 2>&1)"
+salida="$(cd "$PROY_REQ" && PATH="$STUB" setsid node "$RAIZ/bin/agent-skills.cjs" --all --envs=claude --local < /dev/null 2>&1)"
 contiene "$salida" "No hay terminal interactiva" "sin TTY pide --yes en lugar de instalar"
 [ ! -f "$LOG" ] && pasa "sin TTY no ejecuta el gestor" || falla "sin TTY no ejecuta el gestor" "$(cat "$LOG")"
 
@@ -220,7 +226,7 @@ contiene "$salida" "No hay terminal interactiva" "sin TTY pide --yes en lugar de
 en_terminal() {
   local respuesta="$1" transcripcion="$TMP/pty.txt"
   rm -f "$transcripcion"
-  printf '%s' "$respuesta" | script -q -c "cd '$PROY_REQ' && env PATH='$STUB' node '$RAIZ/bin/agent-skills.cjs' --skills=java-developer --envs=claude" "$transcripcion" >/dev/null 2>&1
+  printf '%s' "$respuesta" | script -q -c "cd '$PROY_REQ' && env PATH='$STUB' node '$RAIZ/bin/agent-skills.cjs' --skills=java-developer --envs=claude --local" "$transcripcion" >/dev/null 2>&1
   cat "$transcripcion"
 }
 
@@ -249,7 +255,7 @@ else
 fi
 
 # 3e. Con --yes instala sin preguntar.
-salida="$(cd "$PROY_REQ" && sin_git node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=claude --yes < /dev/null 2>&1)"
+salida="$(cd "$PROY_REQ" && sin_git node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=claude --yes --local < /dev/null 2>&1)"
 contiene "$salida" "Instalando" "--yes instala sin preguntar"
 contiene "$salida" "todos los requisitos están instalados" "--yes deja el entorno completo"
 [ -f "$LOG" ] && contiene "$(cat "$LOG")" "apt-get update" "refresca el índice antes de instalar" \
@@ -258,7 +264,7 @@ rm -rf "$PROY_REQ/.claude"
 rm -f "$STUB/git" "$LOG"
 
 # 3f. Simulación: muestra el plan pero no toca nada.
-salida="$(cd "$PROY_REQ" && sin_git node "$RAIZ/bin/agent-skills.cjs" --all --dry-run < /dev/null 2>&1)"
+salida="$(cd "$PROY_REQ" && sin_git node "$RAIZ/bin/agent-skills.cjs" --all --dry-run --local < /dev/null 2>&1)"
 contiene "$salida" "Modo simulación" "--dry-run no instala"
 [ ! -f "$LOG" ] && pasa "--dry-run no ejecuta el gestor" || falla "--dry-run no ejecuta el gestor" "$(cat "$LOG")"
 
@@ -266,7 +272,7 @@ contiene "$salida" "Modo simulación" "--dry-run no instala"
 SOLO_NODE="$TMP/solo-node"
 mkdir -p "$SOLO_NODE"
 for real in node npm npx; do ln -sf "$(command -v "$real")" "$SOLO_NODE/$real"; done
-salida="$(cd "$PROY_REQ" && PATH="$SOLO_NODE" node "$RAIZ/bin/agent-skills.cjs" --all --envs=claude --yes < /dev/null 2>&1)"
+salida="$(cd "$PROY_REQ" && PATH="$SOLO_NODE" node "$RAIZ/bin/agent-skills.cjs" --all --envs=claude --yes --local < /dev/null 2>&1)"
 contiene "$salida" "gestor de paquetes" "sin gestor, lo dice claramente"
 contiene "$salida" "Instálalo a mano" "sin gestor, da instrucciones manuales"
 
@@ -277,7 +283,7 @@ titulo "4. Instalación de skills en un proyecto"
 PROY="$TMP/proyecto"
 mkdir -p "$PROY"
 
-salida="$(cd "$PROY" && node "$RAIZ/bin/agent-skills.cjs" --all --envs=claude,cursor --yes 2>&1)"
+salida="$(cd "$PROY" && node "$RAIZ/bin/agent-skills.cjs" --all --envs=claude,cursor --yes --local 2>&1)"
 contiene "$salida" "instalados" "instala con --all --yes"
 [ -f "$PROY/.claude/skills/solution-architect/SKILL.md" ] \
   && pasa "copia SKILL.md a .claude/skills/" || falla "copia SKILL.md a .claude/skills/"
@@ -290,26 +296,26 @@ contiene "$salida" "instalados" "instala con --all --yes"
 [ ! -d "$PROY/.junie" ] && pasa "no toca entornos no pedidos" || falla "no toca entornos no pedidos"
 
 # Segunda pasada: no pisa lo que ya existe.
-salida="$(cd "$PROY" && node "$RAIZ/bin/agent-skills.cjs" --all --envs=claude,cursor --yes 2>&1)"
+salida="$(cd "$PROY" && node "$RAIZ/bin/agent-skills.cjs" --all --envs=claude,cursor --yes --local 2>&1)"
 contiene "$salida" "ya existían y no se tocaron" "es idempotente sin --force"
 
 # Con --force sí sobrescribe.
 echo "modificado" > "$PROY/.cursor/rules/java-developer.mdc"
-salida="$(cd "$PROY" && node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=cursor --yes --force 2>&1)"
+salida="$(cd "$PROY" && node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=cursor --yes --force --local 2>&1)"
 if grep -q "modificado" "$PROY/.cursor/rules/java-developer.mdc"; then falla "--force sobrescribe"
 else pasa "--force sobrescribe"; fi
 
 # Simulación: no escribe nada.
 PROY2="$TMP/proyecto-seco"
 mkdir -p "$PROY2"
-salida="$(cd "$PROY2" && node "$RAIZ/bin/agent-skills.cjs" --all --dry-run 2>&1)"
+salida="$(cd "$PROY2" && node "$RAIZ/bin/agent-skills.cjs" --all --dry-run --local 2>&1)"
 contiene "$salida" "se copiarían" "--dry-run informa sin escribir"
 [ -z "$(ls -A "$PROY2")" ] && pasa "--dry-run deja la carpeta intacta" || falla "--dry-run deja la carpeta intacta"
 
 # Antigravity: reglas y flujos van a carpetas distintas.
 PROY3="$TMP/proyecto-antigravity"
 mkdir -p "$PROY3"
-(cd "$PROY3" && node "$RAIZ/bin/agent-skills.cjs" --skills=solution-architect --envs=antigravity,junie --yes >/dev/null 2>&1)
+(cd "$PROY3" && node "$RAIZ/bin/agent-skills.cjs" --skills=solution-architect --envs=antigravity,junie --yes --local >/dev/null 2>&1)
 [ -f "$PROY3/.agents/rules/solution-architect-01.md" ] \
   && pasa "instala las reglas de Antigravity" || falla "instala las reglas de Antigravity"
 [ -f "$PROY3/.agents/workflows/solution-architect.md" ] \
@@ -318,7 +324,7 @@ mkdir -p "$PROY3"
   && pasa "instala las reglas de Junie" || falla "instala las reglas de Junie"
 
 # Skill inexistente: avisa y no revienta.
-salida="$(cd "$TMP" && node "$RAIZ/bin/agent-skills.cjs" --skills=no-existe --envs=claude --yes 2>&1)"
+salida="$(cd "$TMP" && node "$RAIZ/bin/agent-skills.cjs" --skills=no-existe --envs=claude --yes --local 2>&1)"
 contiene "$salida" "No hay skills válidas" "rechaza skills desconocidas"
 
 # --------------------------------------------------------- 5. arranque install.sh
@@ -480,7 +486,7 @@ mkdir -p "$DESTINO_DIR" "$SIN_MARCAS" "$CON_MARCAS"
 : > "$CON_MARCAS/package.json"
 
 # 7a. --dir= instala en otra carpeta, aunque tenga espacios.
-salida="$(cd "$SIN_MARCAS" && node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=claude --yes --dir="$DESTINO_DIR" 2>&1)"
+salida="$(cd "$SIN_MARCAS" && node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=claude --yes --local --dir="$DESTINO_DIR" 2>&1)"
 contiene "$salida" "instalados" "--dir instala sin preguntar"
 [ -f "$DESTINO_DIR/.claude/skills/java-developer/SKILL.md" ] \
   && pasa "--dir instala en la carpeta indicada" || falla "--dir instala en la carpeta indicada"
@@ -488,20 +494,20 @@ contiene "$salida" "instalados" "--dir instala sin preguntar"
 rm -rf "$DESTINO_DIR/.claude"
 
 # 7b. Una ruta escrita como la deja arrastrar la carpeta (espacios escapados).
-salida="$(cd "$SIN_MARCAS" && node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=claude --yes --dir="${DESTINO_DIR// /\\ }" 2>&1)"
+salida="$(cd "$SIN_MARCAS" && node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=claude --yes --local --dir="${DESTINO_DIR// /\\ }" 2>&1)"
 [ -f "$DESTINO_DIR/.claude/skills/java-developer/SKILL.md" ] \
   && pasa "--dir entiende los espacios escapados de arrastrar" || falla "--dir entiende los espacios escapados de arrastrar"
 rm -rf "$DESTINO_DIR/.claude"
 
 # 7c. --dir con una carpeta que no existe: lo dice y no inventa nada.
-salida="$(node "$RAIZ/bin/agent-skills.cjs" --all --yes --dir="$TMP/no-existe" 2>&1)"
+salida="$(node "$RAIZ/bin/agent-skills.cjs" --all --yes --local --dir="$TMP/no-existe" 2>&1)"
 codigo=$?
 contiene "$salida" "no existe" "--dir inexistente avisa con claridad"
 igual "$codigo" "1" "--dir inexistente termina con error"
 
 if command -v script >/dev/null 2>&1; then
   # 7d. Carpeta que no parece proyecto: pregunta y usa la ruta indicada.
-  salida="$(en_pty_dir "$SIN_MARCAS" "" "$DESTINO_DIR" "3" "1" "")"
+  salida="$(en_pty_dir "$SIN_MARCAS" "" "$DESTINO_DIR" "3" "1" "2" "")"
   contiene "$salida" "no parece un proyecto" "pregunta cuando la carpeta no parece un proyecto"
   contiene "$salida" "Se instalará en" "confirma la carpeta elegida"
   [ -f "$DESTINO_DIR/.claude/skills/java-developer/SKILL.md" ] \
@@ -510,13 +516,13 @@ if command -v script >/dev/null 2>&1; then
   rm -rf "$DESTINO_DIR/.claude"
 
   # 7e. Enter a secas: se queda en la carpeta actual.
-  salida="$(en_pty_dir "$SIN_MARCAS" "" "" "3" "1" "")"
+  salida="$(en_pty_dir "$SIN_MARCAS" "" "" "3" "1" "2" "")"
   [ -f "$SIN_MARCAS/.claude/skills/java-developer/SKILL.md" ] \
     && pasa "Enter a secas usa la carpeta actual" || falla "Enter a secas usa la carpeta actual"
   rm -rf "$SIN_MARCAS/.claude"
 
   # 7f. Dentro de un proyecto de verdad, no molesta con la pregunta.
-  salida="$(en_pty_dir "$CON_MARCAS" "" "3" "1" "")"
+  salida="$(en_pty_dir "$CON_MARCAS" "" "3" "1" "2" "")"
   no_contiene "$salida" "no parece un proyecto" "no pregunta si ya estás en un proyecto"
   [ -f "$CON_MARCAS/.claude/skills/java-developer/SKILL.md" ] \
     && pasa "instala en el proyecto detectado" || falla "instala en el proyecto detectado"
@@ -525,7 +531,7 @@ if command -v script >/dev/null 2>&1; then
   # 7g. Ruta que no existe: ofrece crearla.
   NUEVA="$TMP/carpeta-nueva"
   rm -rf "$NUEVA"
-  salida="$(en_pty_dir "$SIN_MARCAS" "" "$NUEVA" "s" "3" "1" "")"
+  salida="$(en_pty_dir "$SIN_MARCAS" "" "$NUEVA" "s" "3" "1" "2" "")"
   contiene "$salida" "¿La creo?" "ofrece crear la carpeta si no existe"
   [ -d "$NUEVA" ] && pasa "crea la carpeta cuando el usuario acepta" || falla "crea la carpeta cuando el usuario acepta"
   rm -rf "$NUEVA" "$SIN_MARCAS/.claude"
@@ -566,7 +572,7 @@ printf '#!/usr/bin/env bash\necho "git version 2.99.0"\n' | crear_stub "$STUB/gi
 for lanzador in instalar-macos.command instalar-linux.sh; do
   rm -f "$LANZ_NPX_LOG"
   salida="$(cd "$LANZ_DIR" && printf '\n' | PATH="$STUB" AGENT_SKILLS_RAW="$LANZ_URL" \
-    bash "$RAIZ/lanzadores/$lanzador" --all --envs=claude --yes 2>&1)"
+    bash "$RAIZ/lanzadores/$lanzador" --all --envs=claude --yes --local 2>&1)"
   contiene "$salida" "comprobando el entorno" "$lanzador descarga y ejecuta el instalador"
   contiene "$salida" "Pulsa una tecla" "$lanzador deja la ventana abierta al terminar"
   [ -f "$LANZ_NPX_LOG" ] && contiene "$(cat "$LANZ_NPX_LOG")" "--all --envs=claude" "$lanzador pasa los argumentos" \
@@ -598,7 +604,7 @@ SN_PROY="$TMP/sin-node"
 mkdir -p "$SN_PROY"
 
 # Con una copia local no descarga nada: copia directamente.
-salida="$(cd "$SN_PROY" && PATH="$STUB" AGENT_SKILLS_SRC="$RAIZ" bash "$RAIZ/install.sh" --sin-node < /dev/null 2>&1)"
+salida="$(cd "$SN_PROY" && PATH="$STUB" AGENT_SKILLS_SRC="$RAIZ" bash "$RAIZ/install.sh" --sin-node --local < /dev/null 2>&1)"
 contiene "$salida" "sin Node" "instala sin Node cuando se pide con --sin-node"
 contiene "$salida" "archivo(s) instalados" "informa de cuántos archivos copió"
 [ -f "$SN_PROY/.claude/skills/solution-architect/SKILL.md" ] && pasa "sin Node: copia las skills de Claude" || falla "sin Node: copia las skills de Claude"
@@ -610,12 +616,12 @@ contiene "$salida" "archivo(s) instalados" "informa de cuántos archivos copió"
 # Lo que copia sin Node tiene que ser exactamente lo mismo que copia con Node.
 CON_NODE="$TMP/con-node"
 mkdir -p "$CON_NODE"
-(cd "$CON_NODE" && node "$RAIZ/bin/agent-skills.cjs" --all --yes >/dev/null 2>&1)
+(cd "$CON_NODE" && node "$RAIZ/bin/agent-skills.cjs" --all --yes --local >/dev/null 2>&1)
 if diff -r "$CON_NODE" "$SN_PROY" >/dev/null 2>&1; then pasa "sin Node instala exactamente lo mismo que con Node"
 else falla "sin Node instala exactamente lo mismo que con Node" "$(diff -rq "$CON_NODE" "$SN_PROY" | head -5)"; fi
 
 # Segunda pasada: respeta lo que ya existe.
-salida="$(cd "$SN_PROY" && PATH="$STUB" AGENT_SKILLS_SRC="$RAIZ" bash "$RAIZ/install.sh" --sin-node < /dev/null 2>&1)"
+salida="$(cd "$SN_PROY" && PATH="$STUB" AGENT_SKILLS_SRC="$RAIZ" bash "$RAIZ/install.sh" --sin-node --local < /dev/null 2>&1)"
 contiene "$salida" "ya existían y no se tocaron" "sin Node es idempotente"
 
 # Descarga de verdad: se empaqueta el repositorio y se sirve por file://.
@@ -626,7 +632,7 @@ if hay_tar="$(command -v tar)"; then
     || tar -czf "$TMP/repo.tar.gz" -C "$RAIZ" skills >/dev/null 2>&1
   cp "$RAIZ/install.sh" "$TMP/install-suelto.sh"
   salida="$(cd "$SN_DESCARGA" && PATH="$STUB" AGENT_SKILLS_RAW="file://$RAIZ" AGENT_SKILLS_TARBALL="file://$TMP/repo.tar.gz" \
-    bash "$TMP/install-suelto.sh" --sin-node < /dev/null 2>&1)"
+    bash "$TMP/install-suelto.sh" --sin-node --local < /dev/null 2>&1)"
   contiene "$salida" "Descargando" "sin Node descarga las skills si no hay copia local"
   [ -f "$SN_DESCARGA/.claude/skills/java-developer/SKILL.md" ] \
     && pasa "sin Node instala lo descargado" || falla "sin Node instala lo descargado" "$salida"
@@ -643,7 +649,7 @@ if command -v script >/dev/null 2>&1; then
   transcripcion="$TMP/pty-sn.txt"
   {
     sleep 1; printf 'n\n'; sleep 0.8; printf 's\n'; sleep 0.8
-    printf '%s\n' "$SN_ELEGIDA"; sleep 0.8; printf '1\n'; sleep 1
+    printf '2\n'; sleep 0.8; printf '%s\n' "$SN_ELEGIDA"; sleep 0.8; printf '1\n'; sleep 1
   } | script -q -c "cd '$SN_OFERTA' && env PATH='$STUB' AGENT_SKILLS_SRC='$RAIZ' bash '$RAIZ/install.sh'" "$transcripcion" >/dev/null 2>&1
   salida="$(cat "$transcripcion")"
   contiene "$salida" "Hay otra salida" "ofrece el modo sin Node al rechazar la instalación"
@@ -663,12 +669,112 @@ no_contiene "$salida" "Hay otra salida" "--check no ofrece el modo sin Node"
 if [ -n "${PWSH:-}" ]; then
   SN_PS="$TMP/sin-node-ps"
   mkdir -p "$SN_PS"
-  salida="$(cd "$SN_PS" && AGENT_SKILLS_SRC="$RAIZ" "$PWSH" -NoProfile -File "$RAIZ/install.ps1" --sin-node < /dev/null 2>&1)"
+  salida="$(cd "$SN_PS" && AGENT_SKILLS_SRC="$RAIZ" "$PWSH" -NoProfile -File "$RAIZ/install.ps1" --sin-node --local < /dev/null 2>&1)"
   contiene "$salida" "archivo(s) instalados" "install.ps1 instala sin Node"
   if diff -r "$CON_NODE" "$SN_PS" >/dev/null 2>&1; then pasa "install.ps1 sin Node copia lo mismo que con Node"
   else falla "install.ps1 sin Node copia lo mismo que con Node" "$(diff -rq "$CON_NODE" "$SN_PS" | head -5)"; fi
 else
   salta "modo sin Node de PowerShell (PowerShell no está instalado)"
+fi
+
+# ------------------------------------------- 10. Instalación global vs proyecto
+
+titulo "10. Instalación global (todos los proyectos)"
+
+# Cada prueba usa su propia carpeta personal de mentira.
+casa_limpia() {
+  local casa="$TMP/casa-$1"
+  rm -rf "$casa"
+  mkdir -p "$casa"
+  printf '%s' "$casa"
+}
+
+G_PROY="$TMP/proyecto-global"
+mkdir -p "$G_PROY"
+: > "$G_PROY/package.json"
+
+CASA="$(casa_limpia global)"
+salida="$(cd "$G_PROY" && HOME="$CASA" node "$RAIZ/bin/agent-skills.cjs" --all --yes --global 2>&1)"
+contiene "$salida" "global (todos tus proyectos)" "--global anuncia el ámbito global"
+[ -f "$CASA/.claude/skills/solution-architect/SKILL.md" ] && pasa "global: skills de Claude Code en ~/.claude/skills" || falla "global: skills de Claude Code en ~/.claude/skills"
+[ -f "$CASA/.claude/agents/solution-architect.md" ] && pasa "global: subagentes en ~/.claude/agents" || falla "global: subagentes en ~/.claude/agents"
+[ -f "$CASA/.cursor/rules/java-developer.mdc" ] && pasa "global: reglas de Cursor en ~/.cursor/rules" || falla "global: reglas de Cursor en ~/.cursor/rules"
+[ -f "$CASA/.junie/rules/java-developer.md" ] && pasa "global: reglas de Junie en ~/.junie/rules" || falla "global: reglas de Junie en ~/.junie/rules"
+[ -f "$CASA/.gemini/antigravity/rules/solution-architect-01.md" ] && pasa "global: reglas de Antigravity en ~/.gemini/antigravity/rules" || falla "global: reglas de Antigravity en ~/.gemini/antigravity/rules"
+[ -f "$CASA/.gemini/antigravity/global_workflows/solution-architect.md" ] && pasa "global: flujos de Antigravity en global_workflows" || falla "global: flujos de Antigravity en global_workflows"
+[ ! -d "$G_PROY/.claude" ] && pasa "global no escribe nada en el proyecto" || falla "global no escribe nada en el proyecto"
+
+# Índices para las herramientas que leen sus guías globales de un solo archivo.
+[ -f "$CASA/.junie/AGENTS.md" ] && pasa "global: crea el índice de Junie" || falla "global: crea el índice de Junie"
+[ -f "$CASA/.gemini/AGENTS.md" ] && pasa "global: crea el índice de Antigravity" || falla "global: crea el índice de Antigravity"
+if [ -f "$CASA/.junie/AGENTS.md" ]; then
+  contiene "$(cat "$CASA/.junie/AGENTS.md")" ".junie/rules/java-developer.md" "el índice apunta a archivos que existen de verdad"
+  ruta_citada="$(grep -o "$CASA/.junie/rules/[a-z-]*\.md" "$CASA/.junie/AGENTS.md" | head -1)"
+  [ -f "$ruta_citada" ] && pasa "la primera ruta del índice existe" || falla "la primera ruta del índice existe" "$ruta_citada"
+fi
+
+# El índice es un bloque entre marcas: se reescribe sin tocar lo que haya alrededor.
+printf '# Mis guías\n\nEscribe en español.\n' > "$CASA/.junie/AGENTS.md"
+(cd "$G_PROY" && HOME="$CASA" node "$RAIZ/bin/agent-skills.cjs" --all --yes --global >/dev/null 2>&1)
+(cd "$G_PROY" && HOME="$CASA" node "$RAIZ/bin/agent-skills.cjs" --all --yes --global >/dev/null 2>&1)
+contiene "$(cat "$CASA/.junie/AGENTS.md")" "Escribe en español." "el índice respeta el texto del usuario"
+igual "$(grep -c 'agent-skills: inicio' "$CASA/.junie/AGENTS.md")" "1" "el índice no se duplica al repetir la instalación"
+
+# Ambos ámbitos a la vez.
+CASA="$(casa_limpia ambos)"
+G_PROY2="$TMP/proyecto-ambos"
+mkdir -p "$G_PROY2"
+salida="$(cd "$G_PROY2" && HOME="$CASA" node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=claude --yes --scope=global,proyecto 2>&1)"
+[ -f "$CASA/.claude/skills/java-developer/SKILL.md" ] && pasa "--scope=global,proyecto instala en la carpeta personal" || falla "--scope=global,proyecto instala en la carpeta personal"
+[ -f "$G_PROY2/.claude/skills/java-developer/SKILL.md" ] && pasa "--scope=global,proyecto instala también en el proyecto" || falla "--scope=global,proyecto instala también en el proyecto"
+
+# Validación previa: se informa de qué herramientas hay antes de instalar.
+CASA="$(casa_limpia deteccion)"
+mkdir -p "$CASA/.claude"
+salida="$(cd "$G_PROY2" && HOME="$CASA" node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --yes --global --dry-run 2>&1)"
+contiene "$salida" "Herramientas detectadas" "informa de las herramientas antes de instalar"
+contiene "$salida" "detectada" "marca como detectada la que existe"
+contiene "$salida" "no detectada" "marca como no detectada la que falta"
+
+# Claude Code respeta CLAUDE_CONFIG_DIR.
+CASA="$(casa_limpia configdir)"
+(cd "$G_PROY2" && HOME="$CASA" CLAUDE_CONFIG_DIR="$CASA/otra-config" node "$RAIZ/bin/agent-skills.cjs" --skills=java-developer --envs=claude --yes --global >/dev/null 2>&1)
+[ -f "$CASA/otra-config/skills/java-developer/SKILL.md" ] && pasa "respeta CLAUDE_CONFIG_DIR" || falla "respeta CLAUDE_CONFIG_DIR"
+
+# El modo sin Node instala exactamente lo mismo en el ámbito global.
+CASA_SN="$(casa_limpia sinnode)"
+CASA_NODE="$(casa_limpia connode)"
+(cd "$G_PROY2" && HOME="$CASA_SN" AGENT_SKILLS_SRC="$RAIZ" bash "$RAIZ/install.sh" --sin-node --global < /dev/null >/dev/null 2>&1)
+(cd "$G_PROY2" && HOME="$CASA_NODE" node "$RAIZ/bin/agent-skills.cjs" --all --yes --global >/dev/null 2>&1)
+if diff -r -x "AGENTS.md" "$CASA_SN" "$CASA_NODE" >/dev/null 2>&1; then pasa "sin Node instala lo mismo que con Node en global"
+else falla "sin Node instala lo mismo que con Node en global" "$(diff -rq -x AGENTS.md "$CASA_SN" "$CASA_NODE" | head -5)"; fi
+[ -f "$CASA_SN/.junie/AGENTS.md" ] && pasa "sin Node también escribe el índice" || falla "sin Node también escribe el índice"
+
+# Menú interactivo: la opción 1 instala en global y no toca el proyecto.
+if command -v script >/dev/null 2>&1; then
+  CASA="$(casa_limpia menu)"
+  G_PROY3="$TMP/proyecto-menu"
+  rm -rf "$G_PROY3"; mkdir -p "$G_PROY3"; : > "$G_PROY3/package.json"
+  transcripcion="$TMP/pty-global.txt"
+  rm -f "$transcripcion"
+  {
+    sleep 1; printf '3\n'; sleep 0.7; printf '1\n'; sleep 0.7; printf '1\n'; sleep 0.7; printf '\n'; sleep 1.2
+  } | script -q -c "cd '$G_PROY3' && env HOME='$CASA' node '$RAIZ/bin/agent-skills.cjs'" "$transcripcion" >/dev/null 2>&1
+  salida="$(cat "$transcripcion")"
+  contiene "$salida" "Dónde quieres instalarlas" "el menú pregunta el ámbito"
+  [ -f "$CASA/.claude/skills/java-developer/SKILL.md" ] && pasa "el menú instala en global al elegir 1" || falla "el menú instala en global al elegir 1"
+  [ ! -d "$G_PROY3/.claude" ] && pasa "el menú no toca el proyecto si eligió global" || falla "el menú no toca el proyecto si eligió global"
+else
+  salta "menú de ámbito (falta el comando 'script')"
+fi
+
+# Nada de esto puede haber tocado la carpeta personal de verdad.
+if [ -n "${CASA_REAL:-}" ] && [ -d "$CASA_REAL" ]; then
+  if grep -rqs "agent-skills: inicio" "$CASA_REAL/.junie/AGENTS.md" "$CASA_REAL/.gemini/AGENTS.md" 2>/dev/null; then
+    falla "las pruebas no tocan la carpeta personal real"
+  else
+    pasa "las pruebas no tocan la carpeta personal real"
+  fi
 fi
 
 # ------------------------------------------------------------------- resumen

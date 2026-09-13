@@ -12,6 +12,8 @@
   Opciones:
     --check        solo comprueba el sistema y no instala ni cambia nada
     --sin-node     copia las skills sin Node, sin instalar nada en el sistema
+    --global       instala en la carpeta personal: sirve para todos los proyectos
+    --local        instala solo en el proyecto actual
                    (con `irm ... | iex`, que no admite argumentos, usa en su
                     lugar la variable de entorno AGENT_SKILLS_CHECK=1)
     -y, --yes      instala los requisitos que falten sin preguntar
@@ -27,6 +29,8 @@ $AsumirSi = ($env:AGENT_SKILLS_ASSUME_YES -eq '1')
 $SinInstalar = ($env:AGENT_SKILLS_NO_INSTALL -eq '1')
 $SoloComprobar = ($env:AGENT_SKILLS_CHECK -eq '1')
 $SinNode = ($env:AGENT_SKILLS_SIN_NODE -eq '1')
+$SnAmbitos = @()
+if ($env:AGENT_SKILLS_AMBITO) { $SnAmbitos = $env:AGENT_SKILLS_AMBITO -split '[ ,]+' | Where-Object { $_ } }
 $RawBase = if ($env:AGENT_SKILLS_RAW) { $env:AGENT_SKILLS_RAW } else { 'https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main' }
 $global:SnAqui = if ($PSScriptRoot) { $PSScriptRoot } else { '' }
 $ArgsInstalador = @()
@@ -36,6 +40,9 @@ foreach ($a in $args) {
         '^--no-install$'    { $SinInstalar = $true }
         # Copia las skills sin Node: no instala nada en el sistema.
         '^(--sin-node|--no-node)$' { $SinNode = $true }
+        # Ambito de instalacion, tambien para el modo sin Node.
+        '^--global$' { $SnAmbitos += 'global'; $ArgsInstalador += $a }
+        '^(--local|--proyecto)$' { $SnAmbitos += 'proyecto'; $ArgsInstalador += $a }
         # Comprobar es mirar, no tocar: --check nunca instala nada.
         '^(--check|--doctor)$' { $SoloComprobar = $true; $ArgsInstalador += $a }
         default             { $ArgsInstalador += $a }
@@ -141,7 +148,7 @@ function Invoke-OfrecerSinNode {
         Escribe-Error "  No se pudo cargar el modo sin Node."
         return $false
     }
-    return (Invoke-ModoSinNode)
+    return (Invoke-ModoSinNode -Ambitos $SnAmbitos)
 }
 
 # ------------------------------------------------------- comprobar requisitos
@@ -204,7 +211,7 @@ else { Write-Host "  Gestor:  ninguno conocido" -ForegroundColor Yellow }
 # Si se pidio explicitamente, ni siquiera se miran los requisitos.
 if ($SinNode) {
     if (-not (Import-SinNode)) { Escribe-Error "  No se pudo cargar el modo sin Node."; exit 1 }
-    if (Invoke-ModoSinNode) { exit 0 } else { exit 1 }
+    if (Invoke-ModoSinNode -Ambitos $SnAmbitos) { exit 0 } else { exit 1 }
 }
 
 $estado = Comprueba-Requisitos

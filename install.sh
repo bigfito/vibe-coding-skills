@@ -12,6 +12,8 @@
 # Opciones:
 #   --check        solo comprueba el sistema y no instala ni cambia nada
 #   --sin-node     copia las skills sin Node, sin instalar nada en el sistema
+#   --global       instala en la carpeta personal: sirve para todos los proyectos
+#   --local        instala solo en el proyecto actual
 #   --yes, -y      instala los requisitos que falten sin preguntar
 #   --no-install   nunca instala nada: solo dice qué falta y cómo instalarlo
 # Cualquier otra opción se pasa tal cual al instalador (--all, --envs=…, etc.).
@@ -25,6 +27,7 @@ RAW_BASE="${AGENT_SKILLS_RAW:-https://raw.githubusercontent.com/bigfito/vibe-cod
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "")"
 
 SIN_NODE="${AGENT_SKILLS_SIN_NODE:-0}"
+SN_AMBITOS="${AGENT_SKILLS_AMBITO:-}"
 ASUMIR_SI="${AGENT_SKILLS_ASSUME_YES:-0}"
 SIN_INSTALAR="${AGENT_SKILLS_NO_INSTALL:-0}"
 SOLO_COMPROBAR="${AGENT_SKILLS_CHECK:-0}"
@@ -36,6 +39,9 @@ for arg in "$@"; do
     --no-install) SIN_INSTALAR=1 ;;
     # Copia las skills sin Node: no hace falta instalar nada en el sistema.
     --sin-node|--no-node) SIN_NODE=1 ;;
+    # Ámbito de instalación, también para el modo sin Node.
+    --global) SN_AMBITOS="${SN_AMBITOS:+$SN_AMBITOS }global"; ARGS_INSTALADOR+=("$arg") ;;
+    --local|--proyecto) SN_AMBITOS="${SN_AMBITOS:+$SN_AMBITOS }proyecto"; ARGS_INSTALADOR+=("$arg") ;;
     # Comprobar es mirar, no tocar: --check nunca instala nada.
     --check|--doctor) SOLO_COMPROBAR=1; ARGS_INSTALADOR+=("$arg") ;;
     *) ARGS_INSTALADOR+=("$arg") ;;

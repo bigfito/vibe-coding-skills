@@ -74,23 +74,60 @@ function global:Copy-SnArbol($origen, $destino) {
     }
 }
 
-function global:Install-SnSkill($base, $skill, $entorno, $destino) {
+# Carpeta base de cada herramienta segun el ambito:
+#   global   - la carpeta personal, para todos los proyectos.
+#   proyecto - dentro del proyecto elegido.
+function global:Get-SnBase($entorno, $ambito, $destino) {
+    if ($ambito -eq 'global') {
+        switch ($entorno) {
+            'claude' { if ($env:CLAUDE_CONFIG_DIR) { return $env:CLAUDE_CONFIG_DIR } else { return (Join-Path $HOME '.claude') } }
+            'cursor' { return (Join-Path $HOME '.cursor') }
+            'junie'  { return (Join-Path $HOME '.junie') }
+            'antigravity' { return (Join-Path $HOME '.gemini\antigravity') }
+        }
+    }
+    switch ($entorno) {
+        'claude' { return (Join-Path $destino '.claude') }
+        'cursor' { return (Join-Path $destino '.cursor') }
+        'junie'  { return (Join-Path $destino '.junie') }
+        'antigravity' { return (Join-Path $destino '.agents') }
+    }
+}
+
+# Hay rastro de que la herramienta este instalada en este computador?
+function global:Test-SnInstalada($entorno) {
+    # Join-Path revienta si la base es nula, y las variables de entorno de
+    # Windows no existen en macOS ni en Linux: se unen solo cuando hay algo.
+    $unir = { param($base, $hijo) if ($base) { Join-Path $base $hijo } else { $null } }
+    $pistas = switch ($entorno) {
+        'claude' { @((& $unir $HOME '.claude'), (& $unir $HOME '.claude.json')) }
+        'cursor' { @((& $unir $HOME '.cursor'), (& $unir $env:LOCALAPPDATA 'Programs\cursor'), (& $unir $env:APPDATA 'Cursor')) }
+        'junie'  { @((& $unir $HOME '.junie'), (& $unir $env:APPDATA 'JetBrains')) }
+        'antigravity' { @((& $unir $HOME '.gemini'), (& $unir $HOME '.antigravity'), (& $unir $env:APPDATA 'Antigravity')) }
+        default { @() }
+    }
+    foreach ($p in $pistas) { if ($p -and (Test-Path $p)) { return $true } }
+    return $false
+}
+
+function global:Install-SnSkill($base, $skill, $entorno, $ambito, $destino) {
+    $raiz = Get-SnBase $entorno $ambito $destino
     switch ($entorno) {
         'claude' {
-            Copy-SnArchivo (Join-Path $base 'SKILL.md') (Join-Path $destino ".claude\skills\$skill\SKILL.md")
+            Copy-SnArchivo (Join-Path $base 'SKILL.md') (Join-Path $raiz "skills\$skill\SKILL.md")
             foreach ($extra in @('references', 'assets')) {
-                Copy-SnArbol (Join-Path $base $extra) (Join-Path $destino ".claude\skills\$skill\$extra")
+                Copy-SnArbol (Join-Path $base $extra) (Join-Path $raiz "skills\$skill\$extra")
             }
             $agentes = Join-Path $base 'agents'
             if (Test-Path $agentes) {
                 foreach ($a in Get-ChildItem -Path $agentes -File) {
-                    Copy-SnArchivo $a.FullName (Join-Path $destino ".claude\agents\$($a.Name)")
+                    Copy-SnArchivo $a.FullName (Join-Path $raiz "agents\$($a.Name)")
                 }
             }
         }
         { $_ -in @('cursor', 'junie') } {
             $origen = Join-Path $base "dist\$entorno"
-            $carpeta = if ($entorno -eq 'cursor') { Join-Path $destino '.cursor\rules' } else { Join-Path $destino '.junie\rules' }
+            $carpeta = Join-Path $raiz 'rules'
             if (-not (Test-Path $origen)) { return }
             foreach ($f in Get-ChildItem -Path $origen -File) {
                 Copy-SnArchivo $f.FullName (Join-Path $carpeta $f.Name)
@@ -101,21 +138,71 @@ function global:Install-SnSkill($base, $skill, $entorno, $destino) {
         }
         'antigravity' {
             $origen = Join-Path $base 'dist\antigravity'
+            $carpeta = Join-Path $raiz 'rules'
+            $destinoFlujos = if ($ambito -eq 'global') { Join-Path $raiz 'global_workflows' } else { Join-Path $raiz 'workflows' }
             if (-not (Test-Path $origen)) { return }
             foreach ($f in Get-ChildItem -Path $origen -File) {
-                Copy-SnArchivo $f.FullName (Join-Path $destino ".agents\rules\$($f.Name)")
+                Copy-SnArchivo $f.FullName (Join-Path $carpeta $f.Name)
             }
             $flujos = Join-Path $origen 'workflows'
             if (Test-Path $flujos) {
                 foreach ($f in Get-ChildItem -Path $flujos -File) {
-                    Copy-SnArchivo $f.FullName (Join-Path $destino ".agents\workflows\$($f.Name)")
+                    Copy-SnArchivo $f.FullName (Join-Path $destinoFlujos $f.Name)
                 }
             }
             foreach ($extra in @('references', 'assets')) {
-                Copy-SnArbol (Join-Path $base $extra) (Join-Path $destino ".agents\rules\$skill\$extra")
+                Copy-SnArbol (Join-Path $base $extra) (Join-Path $carpeta "$skill\$extra")
             }
         }
     }
+}
+
+# Junie y Antigravity leen sus guias globales de un unico archivo: se les anade
+# un bloque con la lista de lo instalado, entre marcas, sin tocar lo demas.
+function global:Write-SnIndice($entorno, $origen) {
+    $archivo = switch ($entorno) {
+        'junie' { Join-Path $HOME '.junie\AGENTS.md' }
+        'antigravity' { Join-Path $HOME '.gemini\AGENTS.md' }
+        default { $null }
+    }
+    if (-not $archivo) { return $null }
+
+    $carpeta = Join-Path (Get-SnBase $entorno 'global' '') 'rules'
+    if (-not (Test-Path $carpeta)) { return $null }
+
+    $lineas = @(
+        $global:SnMarcaInicio,
+        '## Skills de agent-skills instaladas globalmente',
+        '',
+        "Estas guias estan en ``$carpeta``. Cuando la tarea encaje con alguna,",
+        'lee sus archivos antes de responder:',
+        ''
+    )
+    foreach ($dir in Get-ChildItem -Path (Join-Path $origen 'skills') -Directory) {
+        $archivos = Get-ChildItem -Path $carpeta -File -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Name.StartsWith($dir.Name) -and ($_.Extension -in @('.md', '.mdc')) } |
+                    ForEach-Object { "``$($_.FullName)``" }
+        if ($archivos) { $lineas += "- **$($dir.Name)**: $($archivos -join ', ')" }
+    }
+    $lineas += $global:SnMarcaFin
+    $bloque = $lineas -join "`n"
+
+    $contenido = ''
+    if (Test-Path $archivo) { $contenido = Get-Content -Raw $archivo }
+    $inicio = $contenido.IndexOf($global:SnMarcaInicio)
+    $fin = $contenido.IndexOf($global:SnMarcaFin)
+    if ($inicio -ge 0 -and $fin -gt $inicio) {
+        $nuevo = $contenido.Substring(0, $inicio) + $bloque + $contenido.Substring($fin + $global:SnMarcaFin.Length)
+    } elseif ($contenido.Trim()) {
+        $nuevo = $contenido.TrimEnd() + "`n`n" + $bloque + "`n"
+    } else {
+        $nuevo = $bloque + "`n"
+    }
+
+    $carpetaArchivo = Split-Path -Parent $archivo
+    if (-not (Test-Path $carpetaArchivo)) { New-Item -ItemType Directory -Path $carpetaArchivo -Force | Out-Null }
+    Set-Content -Path $archivo -Value $nuevo -NoNewline
+    return $archivo
 }
 
 function global:Read-SnCarpeta {
@@ -142,6 +229,21 @@ function global:Read-SnCarpeta {
     return (Resolve-Path $ruta).Path
 }
 
+function global:Read-SnAmbitos {
+    Write-Host "`n  Donde quieres instalarlas?"
+    Write-Host "    1. Global - en tu carpeta personal, disponibles en todos tus proyectos"
+    Write-Host "    2. Solo en este proyecto"
+    Write-Host "    3. En los dos sitios"
+    Write-Host "`n  Elige 1, 2 o 3 (Enter para 1): " -NoNewline
+    $r = ''
+    try { $r = [System.Console]::ReadLine() } catch { return @('global') }
+    switch (($r + '').Trim()) {
+        '2' { return @('proyecto') }
+        '3' { return @('global', 'proyecto') }
+        default { return @('global') }
+    }
+}
+
 function global:Read-SnEntornos {
     Write-Host "`n  En que herramientas las instalo?"
     Write-Host "    1. Claude Code"
@@ -164,11 +266,13 @@ function global:Read-SnEntornos {
 }
 
 function global:Invoke-ModoSinNode {
-    param([string]$Destino = '', [string[]]$Entornos = @(), [switch]$Forzar)
+    param([string]$Destino = '', [string[]]$Entornos = @(), [string[]]$Ambitos = @(), [switch]$Forzar)
 
     $global:SnForzar = [bool]$Forzar
     $global:SnCopiados = 0
     $global:SnOmitidos = 0
+    $global:SnMarcaInicio = '<!-- agent-skills: inicio (bloque generado, no editar) -->'
+    $global:SnMarcaFin = '<!-- agent-skills: fin -->'
 
     Escribe-Titulo "agent-skills - instalacion sin Node"
     Write-Host "  Se copiaran todas las skills; no hace falta Node, npm ni git."
@@ -176,20 +280,42 @@ function global:Invoke-ModoSinNode {
     $origen = Get-SnFuente
     if (-not $origen) { return $false }
 
-    if (-not $Destino) {
+    # Validacion previa: que herramientas hay en este computador.
+    Write-Host "`n  Herramientas detectadas en este computador"
+    foreach ($e in @('claude', 'cursor', 'junie', 'antigravity')) {
+        if (Test-SnInstalada $e) { Write-Host ("    {0,-14} detectada" -f $e) -ForegroundColor Green }
+        else { Write-Host ("    {0,-14} no detectada" -f $e) -ForegroundColor Yellow }
+    }
+
+    if (-not $Ambitos.Count) {
+        $Ambitos = if (Hay-Terminal) { Read-SnAmbitos } else { @('global') }
+    }
+    if ($Ambitos -contains 'proyecto' -and -not $Destino) {
         $Destino = if (Hay-Terminal) { Read-SnCarpeta } else { "$PWD" }
     }
+    if (-not $Destino) { $Destino = "$PWD" }
     if (-not $Entornos.Count) {
         $Entornos = if (Hay-Terminal) { Read-SnEntornos } else { @('claude', 'cursor', 'junie', 'antigravity') }
     }
 
     Write-Host "`n  Se instalaran"
-    Write-Host "    Carpeta:      $Destino"
+    Write-Host "    Ambito:       $($Ambitos -join ' ')"
+    if ($Ambitos -contains 'proyecto') { Write-Host "    Carpeta:      $Destino" }
     Write-Host "    Herramientas: $($Entornos -join ' ')"
 
-    foreach ($base in Get-ChildItem -Path (Join-Path $origen 'skills') -Directory) {
+    foreach ($ambito in $Ambitos) {
+        foreach ($base in Get-ChildItem -Path (Join-Path $origen 'skills') -Directory) {
+            foreach ($entorno in $Entornos) {
+                Install-SnSkill $base.FullName $base.Name $entorno $ambito $Destino
+            }
+        }
+    }
+
+    $indices = @()
+    if ($Ambitos -contains 'global') {
         foreach ($entorno in $Entornos) {
-            Install-SnSkill $base.FullName $base.Name $entorno $Destino
+            $archivo = Write-SnIndice $entorno $origen
+            if ($archivo) { $indices += $archivo }
         }
     }
 
@@ -197,10 +323,18 @@ function global:Invoke-ModoSinNode {
         Remove-Item $global:SnTemporal -Recurse -Force -ErrorAction SilentlyContinue
     }
 
-    Write-Host "`n  $($global:SnCopiados) archivo(s) instalados en $Destino" -ForegroundColor Green
+    Write-Host "`n  $($global:SnCopiados) archivo(s) instalados." -ForegroundColor Green
     if ($global:SnOmitidos -gt 0) {
         Write-Host "  $($global:SnOmitidos) ya existian y no se tocaron." -ForegroundColor Yellow
     }
-    Write-Host "  Versiona estas carpetas en git para que el equipo comparta el mismo comportamiento.`n" -ForegroundColor DarkGray
+    if ($indices.Count) {
+        Write-Host "  Se anadio un indice de las skills en:" -ForegroundColor DarkGray
+        foreach ($i in $indices) { Write-Host "    $i" -ForegroundColor DarkGray }
+    }
+    if ($Ambitos -contains 'proyecto') {
+        Write-Host "  Versiona las carpetas del proyecto en git para compartirlas con tu equipo.`n" -ForegroundColor DarkGray
+    } else {
+        Write-Host ""
+    }
     return $true
 }
