@@ -203,7 +203,7 @@ Las cuatro documentan su carpeta personal de forma distinta:
 - 🤖 **Claude Code** — documenta `~/.claude/skills` como carpeta personal: lo que se instala ahí se carga en todas tus sesiones. ✅ Nada más que hacer.
 - ✨ **Cursor** — su vía oficial son las *User Rules* (Ajustes → Rules), que son texto en la configuración, no archivos. Las versiones que leen `~/.cursor/rules` tomarán las skills de ahí; si la tuya no lo hace, copia el contenido de la regla que te interese en Ajustes.
 - 🧠 **Junie** — lee sus guías globales de `~/.junie/AGENTS.md`. Las reglas se copian a `~/.junie/rules/` y en ese archivo se añade **un índice** que las señala.
-- 🚀 **Antigravity** — igual: las reglas van a `~/.gemini/antigravity/` y el índice a `~/.gemini/AGENTS.md`.
+- 🚀 **Antigravity** — igual: las reglas van a `~/.gemini/antigravity/` y el índice a `~/.gemini/AGENTS.md`. Las versiones recientes también leen **Skills nativas**; para instalarlas en ese formato, mira [Skills nativas de Google Antigravity](#8--opciones-avanzadas) en las opciones avanzadas.
 
 > [!NOTE]
 > El índice va entre marcas (`<!-- vibe-coding-skills: inicio -->` … `<!-- vibe-coding-skills: fin -->`). Se reescribe entero en cada instalación y **nunca toca lo que hayas escrito alrededor**.
@@ -449,6 +449,29 @@ Todas funcionan igual por los dos caminos (con Node y con `--sin-node`), salvo `
 - 📦 **Gestores de paquetes que reconoce:** Homebrew (macOS); APT, DNF/YUM, pacman, apk y zypper (Linux y WSL); winget, Chocolatey y Scoop (Windows).
 - 🧩 **Antigravity:** las guías largas se instalan partidas en varios archivos numerados, porque esa herramienta limita el tamaño de cada archivo de reglas; se leen como un solo documento.
 - 🗂️ **solution-architect** incluye plantillas adicionales que el instalador copia junto a la regla.
+
+</details>
+
+<details>
+<summary><b>🚀 Skills nativas de Google Antigravity</b></summary>
+
+<br>
+
+Antigravity documenta ahora **Skills** con el mismo formato que Claude Code: una carpeta por skill con su `SKILL.md`. En ese formato cada skill se instala **completa**, sin partir en archivos numerados ni índice en `~/.gemini/AGENTS.md`.
+
+El instalador principal sigue instalando reglas y flujos. Para instalar las Skills nativas, desde una **copia local del repositorio** (`git clone https://github.com/bigfito/vibe-coding-skills.git`):
+
+| | 🌍 Global | 📁 Por proyecto |
+|---|---|---|
+| **Dónde** | `~/.gemini/config/skills/` | `.agents/skills/` |
+| 🍎 🐧 **macOS · Linux** | `bash scripts/instalar-antigravity.sh` | `bash scripts/instalar-antigravity.sh --dir=/ruta/del/proyecto` |
+| 🪟 **Windows** | `powershell -ExecutionPolicy Bypass -File scripts\instalar-antigravity.ps1` | `powershell -ExecutionPolicy Bypass -File scripts\instalar-antigravity.ps1 -Dir C:\ruta\del\proyecto` |
+
+- Instala las siete skills y **reemplaza** la copia anterior de cada una, así que repetirlo sirve para actualizar.
+- Copia también `references/`, `assets/` y `agents/`, que los `SKILL.md` citan por ruta relativa.
+
+> [!WARNING]
+> Elige **un solo formato** para Antigravity. Si instalas las reglas (`--envs=antigravity`) **y** las Skills nativas, el asistente verá cada guía dos veces.
 
 </details>
 

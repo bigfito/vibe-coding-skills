@@ -87,15 +87,18 @@ if node --input-type=module --eval "$(cat "$RAIZ/lib/install.mjs" | sed 's/^main
 else falla "lib/install.mjs parsea"; fi
 
 if bash -n "$RAIZ/install.sh"; then pasa "install.sh parsea"; else falla "install.sh parsea"; fi
+if bash -n "$RAIZ/scripts/instalar-antigravity.sh"; then pasa "scripts/instalar-antigravity.sh parsea"
+else falla "scripts/instalar-antigravity.sh parsea"; fi
 
 if [ -n "$PWSH" ]; then
   if "$PWSH" -NoProfile -Command "
       \$e=\$null
-      foreach (\$f in @('$RAIZ/install.ps1', '$RAIZ/lib/sin-node.ps1')) {
+      foreach (\$f in @('$RAIZ/install.ps1', '$RAIZ/lib/sin-node.ps1', '$RAIZ/scripts/instalar-antigravity.ps1')) {
         [System.Management.Automation.Language.Parser]::ParseFile(\$f,[ref]\$null,[ref]\$e) > \$null
         if (\$e.Count -gt 0) { \$e | ForEach-Object { \$_.Message }; exit 1 }
       }" >/dev/null 2>&1
-  then pasa "install.ps1 y lib/sin-node.ps1 parsean"; else falla "install.ps1 y lib/sin-node.ps1 parsean"; fi
+  then pasa "install.ps1, lib/sin-node.ps1 y scripts/instalar-antigravity.ps1 parsean"
+  else falla "install.ps1, lib/sin-node.ps1 y scripts/instalar-antigravity.ps1 parsean"; fi
 else
   salta "sintaxis de PowerShell (pwsh no está instalado en esta máquina)"
 fi
@@ -1060,7 +1063,7 @@ igual "$(node -p "require('$COPIA/package.json').version")" "$(node -e "console.
 # Todo el código y los scripts llevan el aviso de copyright del autor.
 sin_copyright=""
 for archivo in "$RAIZ"/install.sh "$RAIZ"/install.ps1 "$RAIZ"/bin/*.cjs "$RAIZ"/lib/*.cjs "$RAIZ"/lib/*.mjs \
-               "$RAIZ"/lib/*.sh "$RAIZ"/lib/*.ps1 "$RAIZ"/lanzadores/* "$RAIZ"/scripts/*.sh "$RAIZ"/tests/*.sh; do
+               "$RAIZ"/lib/*.sh "$RAIZ"/lib/*.ps1 "$RAIZ"/lanzadores/* "$RAIZ"/scripts/*.sh "$RAIZ"/scripts/*.ps1 "$RAIZ"/tests/*.sh; do
   [ -f "$archivo" ] || continue
   if ! head -12 "$archivo" | grep -q "Copyright (c) .* Adolfo Orozco <bigfito@gmail.com>"; then
     sin_copyright="$sin_copyright $(basename "$archivo")"
@@ -1116,6 +1119,63 @@ done
 contiene "$(cat "$RAIZ/README.md")" "RELEASES.md" "el README enlaza las notas de versión"
 contiene "$(cat "$RAIZ/README.md")" "Adolfo Orozco" "el README acredita al autor"
 contiene "$(cat "$RAIZ/README.md")" "scripts/version.sh" "el README explica cómo publicar una versión"
+
+contiene "$(cat "$RAIZ/README.md")" "scripts/instalar-antigravity" "el README documenta las Skills nativas de Antigravity"
+
+# ------------------------------------ 16. Skills nativas de Google Antigravity
+
+titulo "16. Skills nativas de Google Antigravity"
+
+# Cada skill debe quedar completa: SKILL.md y sus carpetas de apoyo.
+comprobar_skills_nativas() {
+  local destino="$1" etiqueta="$2" faltan=""
+  for s in "$RAIZ"/skills/*/; do
+    s="$(basename "$s")"
+    cmp -s "$RAIZ/skills/$s/SKILL.md" "$destino/$s/SKILL.md" || faltan="$faltan $s"
+    for sub in references assets agents; do
+      [ -d "$RAIZ/skills/$s/$sub" ] || continue
+      diff -r "$RAIZ/skills/$s/$sub" "$destino/$s/$sub" >/dev/null 2>&1 || faltan="$faltan $s/$sub"
+    done
+  done
+  [ -z "$faltan" ] && pasa "$etiqueta: copia cada skill completa" \
+                   || falla "$etiqueta: copia cada skill completa" "faltan:$faltan"
+  if [ -d "$destino/solution-architect/references/references" ] || [ -d "$destino/prototype-kickoff/agents/agents" ]; then
+    falla "$etiqueta: repetir no anida las carpetas"
+  else
+    pasa "$etiqueta: repetir no anida las carpetas"
+  fi
+}
+
+rm -rf "$HOME/.gemini"
+salida="$(bash "$RAIZ/scripts/instalar-antigravity.sh" 2>&1 && bash "$RAIZ/scripts/instalar-antigravity.sh" 2>&1)"
+contiene "$salida" "7 skill(s) instaladas" "bash: informa de cuántas skills instaló"
+comprobar_skills_nativas "$HOME/.gemini/config/skills" "bash global"
+
+proyecto_ag="$TMP/proyecto antigravity"
+mkdir -p "$proyecto_ag"
+bash "$RAIZ/scripts/instalar-antigravity.sh" --dir="$proyecto_ag" >/dev/null 2>&1
+bash "$RAIZ/scripts/instalar-antigravity.sh" --dir="$proyecto_ag" >/dev/null 2>&1
+comprobar_skills_nativas "$proyecto_ag/.agents/skills" "bash proyecto"
+
+if bash "$RAIZ/scripts/instalar-antigravity.sh" --dir="$TMP/no-existe" >/dev/null 2>&1; then
+  falla "bash: rechaza un --dir que no existe"
+else
+  pasa "bash: rechaza un --dir que no existe"
+fi
+
+if [ -n "$PWSH" ]; then
+  rm -rf "$HOME/.gemini"
+  HOME="$HOME" "$PWSH" -NoProfile -File "$RAIZ/scripts/instalar-antigravity.ps1" >/dev/null 2>&1
+  HOME="$HOME" "$PWSH" -NoProfile -File "$RAIZ/scripts/instalar-antigravity.ps1" >/dev/null 2>&1
+  comprobar_skills_nativas "$HOME/.gemini/config/skills" "PowerShell global"
+  rm -rf "$proyecto_ag/.agents"
+  "$PWSH" -NoProfile -File "$RAIZ/scripts/instalar-antigravity.ps1" -Dir "$proyecto_ag" >/dev/null 2>&1
+  "$PWSH" -NoProfile -File "$RAIZ/scripts/instalar-antigravity.ps1" -Dir "$proyecto_ag" >/dev/null 2>&1
+  comprobar_skills_nativas "$proyecto_ag/.agents/skills" "PowerShell proyecto"
+else
+  salta "Skills nativas de Antigravity en PowerShell (pwsh no está instalado)"
+fi
+rm -rf "$HOME/.gemini"
 
 # ------------------------------------------------------------------- resumen
 

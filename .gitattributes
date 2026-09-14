@@ -1,0 +1,13 @@
+# Los scripts de Bash tienen que llegar con finales de línea LF aunque el
+# repositorio se clone en Windows con core.autocrlf=true: con CRLF, bash falla
+# en la primera línea ("set: -\r: invalid option").
+*.sh        text eol=lf
+*.command   text eol=lf
+*.cjs       text eol=lf
+*.mjs       text eol=lf
+
+# Los lanzadores de Windows sí necesitan CRLF.
+*.bat       text eol=crlf
+
+# Paquetes .skill: son zip.
+*.skill     binary

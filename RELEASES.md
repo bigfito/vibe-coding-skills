@@ -38,8 +38,21 @@ git push origin --tags
 Cada entrega nueva añade la suya sobre su propio commit:
 
 ```bash
-git tag -a v2.1.2 -m "Versión 2.1.2" && git push --follow-tags
+git tag -a vX.Y.Z -m "Versión X.Y.Z" && git push --follow-tags
 ```
+
+---
+
+## 2.2.0 — 2026-09-14
+
+### ✨ Novedades
+
+- **Skills nativas de Google Antigravity.** Antigravity documenta ahora Skills con carpeta y `SKILL.md`, igual que Claude Code. `scripts/instalar-antigravity.sh` y `scripts/instalar-antigravity.ps1` instalan las siete skills completas en `~/.gemini/config/skills/` (global) o en `.agents/skills/` del proyecto (`--dir=` / `-Dir`), con sus carpetas `references/`, `assets/` y `agents/`. Funcionan desde una copia local del repositorio; el instalador principal sigue instalando reglas y flujos.
+- **Pruebas** para los dos scripts: copian cada skill completa, repetir no anida carpetas y un `--dir` inexistente se rechaza.
+
+### 🐛 Correcciones
+
+- **Los scripts de Bash dejaban de funcionar al clonar en Windows.** Con `core.autocrlf=true`, Git los convertía a finales de línea CRLF y bash fallaba en la primera línea. Un `.gitattributes` fija LF para `.sh`, `.command`, `.cjs` y `.mjs`, CRLF para los `.bat`, y trata los `.skill` como binarios.
 
 ---
 
