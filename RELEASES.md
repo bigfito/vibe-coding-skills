@@ -17,16 +17,28 @@ Qué cambió en cada entrega de **Vibe Coding Skills**.
 
 ### 🏷️ Etiquetas
 
-Cada versión corresponde a un commit. Para crear las etiquetas en el repositorio:
+Cada versión tiene una **etiqueta anotada** en el repositorio, sobre el commit que la entregó:
+
+| Versión | Etiqueta | Commit |
+|---|---|---|
+| 1.0.0 | `v1.0.0` | `5432bba` |
+| 1.1.0 | `v1.1.0` | `7b68018` |
+| 1.2.0 | `v1.2.0` | `1f81221` |
+| 1.3.0 | `v1.3.0` | `b612f97` |
+| 2.0.0 | `v2.0.0` | `606a03d` |
+| 2.1.0 | `v2.1.0` | `fca9a38` |
+| 2.1.1 | `v2.1.1` | `355b2af` |
+
+Para publicarlas en el remoto:
 
 ```bash
-git tag -a v1.0.0 5432bba -m "Versión 1.0.0"
-git tag -a v1.1.0 7b68018 -m "Versión 1.1.0"
-git tag -a v1.2.0 1f81221 -m "Versión 1.2.0"
-git tag -a v1.3.0 b612f97 -m "Versión 1.3.0"
-git tag -a v2.0.0 606a03d -m "Versión 2.0.0"
-git tag -a v2.1.0 fca9a38 -m "Versión 2.1.0"
 git push origin --tags
+```
+
+Cada entrega nueva añade la suya sobre su propio commit:
+
+```bash
+git tag -a v2.1.2 -m "Versión 2.1.2" && git push --follow-tags
 ```
 
 ---
