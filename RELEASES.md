@@ -29,6 +29,7 @@ Cada versión tiene una **etiqueta anotada** en el repositorio, sobre el commit 
 | 2.1.0 | `v2.1.0` | `fca9a38` |
 | 2.1.1 | `v2.1.1` | `355b2af` |
 | 2.2.0 | `v2.2.0` | `a8f1e38` |
+| 2.3.0 | `v2.3.0` | `6e0fe33` |
 
 Para publicarlas en el remoto:
 
