@@ -85,7 +85,7 @@ Puedes instalarlas en una o en todas.
 | 🏗️ | `solution-architect` | Te entrevista para entender qué necesitas y produce arquitectura, modelo de datos, pantallas y un plan por fases |
 | 📋 | `project-manager` | Plan de proyecto, cronograma, dependencias, riesgos, métricas y reportes de estado |
 | 🧪 | `prototype-kickoff` | Coordina un equipo de agentes para construir un prototipo completo que funcione |
-| ☕ | `java-developer` | Escribe Java 25 y Spring Boot legible y mantenible |
+| ☕ | `java-developer` | Escribe Java 25 y Spring Boot legible y mantenible, con sus pruebas en JUnit 6, Mockito y AssertJ |
 | 🐍 | `python-developer` | Escribe Python 3.14, FastAPI y Django con buenas prácticas |
 | ☁️ | `gcp-expert` | Arquitectura, datos, redes y seguridad en Google Cloud |
 | 🟧 | `aws-expert` | Arquitectura, serverless, datos y DevOps en Amazon Web Services |

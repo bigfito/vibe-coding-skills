@@ -41,7 +41,7 @@ NODE_MINIMO=18
 # Versión de este arranque. Se descarga suelto (curl … | bash), así que no puede
 # leer package.json: el script scripts/version.sh la mantiene al día y una
 # prueba comprueba que coincida con la del paquete.
-VERSION="2.2.0"
+VERSION="2.3.0"
 
 RAW_BASE="$(var RAW https://raw.githubusercontent.com/bigfito/vibe-coding-skills/main)"
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "")"

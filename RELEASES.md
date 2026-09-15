@@ -44,6 +44,17 @@ git tag -a vX.Y.Z -m "Versión X.Y.Z" && git push --follow-tags
 
 ---
 
+## 2.3.0 — 2026-09-15
+
+### ✨ Novedades
+
+- **`java-developer` incorpora una sección de pruebas.** Fija JUnit 6 (Jupiter), Mockito 5 y AssertJ 3 a través de `spring-boot-starter-test` y de los starters de prueba de cada tecnología (`spring-boot-starter-webmvc-test`, `spring-boot-starter-data-jpa-test`…). No escribe números de versión: las gestiona el BOM de Spring Boot, de modo que siguen a su versión más reciente sin que la skill caduque. Si hace falta una versión más nueva, se sobrescribe la propiedad del BOM y se documenta el motivo.
+- Pautas para escribirlas: Mockito con `MockitoExtension` en las unitarias, aserciones con AssertJ, pruebas de rebanada antes que `@SpringBootTest`, `@MockitoBean` en lugar de `@MockBean` (retirado en Spring Boot 4), *given / when / then* y `@ParameterizedTest` para los casos límite.
+- El flujo de trabajo pasa a ser "implementa con sus pruebas", se añade el principio "sin pruebas no está terminado" y la descripción de la skill la activa también cuando se piden pruebas.
+- Se regeneraron sus versiones para Cursor, Junie y Antigravity y el paquete `java-developer.skill`. La guía sigue cabiendo en un solo archivo de reglas de Antigravity.
+
+---
+
 ## 2.2.0 — 2026-09-14
 
 ### ✨ Novedades
